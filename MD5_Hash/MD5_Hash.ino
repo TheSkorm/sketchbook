@@ -48,8 +48,8 @@ void loop()
    for (int i=0; i <= 29; i++){ 
    tochar[i] = test.charAt(i);
    }
-   unsigned char* hash=MD5::make_hash( tochar );
-   char *md5str = MD5::make_digest(hash, 16);
+   unsigned char hash=MD5::make_hash( tochar );
+   String md5str = MD5::make_digest(hash, 30);
    Serial.print("Hash=");
    Serial.println(md5str);
 }
