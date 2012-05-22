@@ -1,15 +1,38 @@
 #define DEBUG_MESSAGES true
 #include "header.h"
+#include <SdFat.h>
+#include <Ethernet.h>
+#include <EthernetUdp.h>
+#include <SPI.h>
+#include <MemoryFree.h>
+#include <utility/w5100.h> 
 
 
-
+/************ TEMP/HUMID STUFF ************/
+//#define DHT11_PIN 6      // ADC0
+// How big our line buffer should be. 100 is plenty!
 unsigned long nexttemp; 
+
+/************ ETHERNET STUFF ************/
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+EthernetServer server(80);
+
+
+/************ SDCARD STUFF ************/
+Sd2Card card;
+SdVolume volume;
+SdFile root;
+SdFile file;
+SdFat sd;
+SdFile myFile;
+const int chipSelect = 4;
 
 
 void setup() {
 	Serial.begin(9600);
 	debug("SERIAL",1,"STARTED"); 
 	setup_temp(6);
+  setup_relays();
 }
 
 byte read_dht11_dat(int DHT11_PIN)
@@ -104,8 +127,10 @@ void loop()
     debug("HUMID",7,String(String(latesttemp.humid) + "." + String(latesttemp.humid_point)));
     debug("TEMP",7,String(String(latesttemp.temp) + "." + String(latesttemp.temp_point)));
 
+    Serial.println(relay_toggle(33));
+
   }
-  delay(200) ;       
+  delay(20) ;       
 
 }
 
@@ -129,4 +154,24 @@ void setup_temp(int DHT11_PIN){
 	debug("TEMP",DHT11_PIN,"STARTING");
 	nexttemp = millis() + 2000;
 	debug("TEMP",DHT11_PIN,"STARTED");
+}
+
+bool relay_toggle(int RELAY_PIN){
+  if (digitalRead(RELAY_PIN)==HIGH){
+    digitalWrite(RELAY_PIN, LOW); 
+    debug("RELAY",RELAY_PIN,"TOGGLED OFF"); 
+    return(false);
+  } else {
+    digitalWrite(RELAY_PIN, HIGH);
+   debug("RELAY",RELAY_PIN,"TOGGLED ON");
+   return(true);
+  }
+}
+
+void setup_relays(){
+  debug("RELAYS",-1,"STARTING");
+  pinMode(13, OUTPUT);
+  pinMode(33, OUTPUT);
+  pinMode(35, OUTPUT);
+  debug("RELAYS",-1,"STARTED");
 }
