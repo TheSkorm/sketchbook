@@ -135,9 +135,9 @@ void loop()
    latesttemp = CheckTemp(7);
     debug("HUMID",7,String(String(latesttemp.humid) + "." + String(latesttemp.humid_point)));
     debug("TEMP",7,String(String(latesttemp.temp) + "." + String(latesttemp.temp_point)));
-      MakeHash();   
-    //Serial.println(relay_toggle(33));
-   // MakeHash();
+      debug("TESTCHALLENGE",-1,MakeChallenge());   
+        debug("TESTHASH",-1,MakeHash("Test"));  
+    // Serial.println(relay_toggle(33));
   }
   digitalWrite(13, HIGH);
   delay(20) ;    
@@ -275,8 +275,8 @@ void ListFiles(EthernetClient client, uint8_t flags) {
   client.println("</ul>");
 }
 
-void MakeHash (){
-  debug("HASH",-1,"HASHING"); 
+String MakeChallenge (){
+  debug("HASH",-1,"HASHING CHALLENGE"); 
   char challenge[17] ;
   for (int i=0; i <= 15; i++){
   int randomnumber = random(1,62);
@@ -304,5 +304,26 @@ void MakeHash (){
    char* md5str = MD5::make_digest(hash, 16);
 
    debug("HASH",-1,String(md5str)); 
+   return (String(md5str));
    free(md5str); // stupid malloc issue.
-}
+ }
+
+
+String MakeHash (String test){
+      debug("HASH",-1,"HASHING"); 
+    char tochar[30];      //TODO clean this shit up
+   for (int i=0; i <= 29; i++){ 
+   tochar[i] = test.charAt(i);
+   }
+
+   unsigned char* hash=MD5::make_hash( tochar );
+   char* md5str = MD5::make_digest(hash, 16);
+
+   debug("HASH",-1,String(md5str)); 
+   return (String(md5str));
+   free(md5str); // stupid malloc issue.
+ }
+
+
+
+
