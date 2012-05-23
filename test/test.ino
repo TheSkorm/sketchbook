@@ -32,7 +32,7 @@ const int chipSelect = 4;
 
 
 void setup() {
-	Serial.begin(9600);
+	Serial.begin(57600);
 	debug("SERIAL",-1,"STARTED"); 
   randomSeed(analogRead(0)); //randommize the ardiuno generotor
 	setup_temp(6);
@@ -137,9 +137,12 @@ void loop()
     debug("TEMP",7,String(String(latesttemp.temp) + "." + String(latesttemp.temp_point)));
        
         debug("TESTHASH",-1,MakeHash("Test"));  
+          challengetype testchallenge = MakeChallenge();
+  debug("TESTCHALLENGE",-1, testchallenge.test);  
+    debug("TESTCHALLENGE",-1,testchallenge.hash); 
     // Serial.println(relay_toggle(33));
   }
-  debug("TESTCHALLENGE",-1,MakeChallenge());  
+
   digitalWrite(13, HIGH);
   delay(20) ;    
     digitalWrite(13, LOW);
@@ -276,7 +279,8 @@ void ListFiles(EthernetClient client, uint8_t flags) {
   client.println("</ul>");
 }
 
-String MakeChallenge (){
+challengetype MakeChallenge (){
+  challengetype returnchallenge;
   debug("HASH",-1,"HASHING CHALLENGE"); 
   char challenge[17] ;
   for (int i=0; i <= 15; i++){
@@ -304,9 +308,10 @@ String MakeChallenge (){
    unsigned char* hash=MD5::make_hash( tochar );
    char* md5str = MD5::make_digest(hash, 16);
    debug("HASH",-1,String(md5str)); 
-   String returnstring = String(md5str);
+   returnchallenge.test = challenge;
+   returnchallenge.hash = String(md5str);
    free(md5str); // stupid malloc issue.
-   return (returnstring);
+   return (returnchallenge);
  }
 
 
