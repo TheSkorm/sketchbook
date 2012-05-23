@@ -135,10 +135,11 @@ void loop()
    latesttemp = CheckTemp(7);
     debug("HUMID",7,String(String(latesttemp.humid) + "." + String(latesttemp.humid_point)));
     debug("TEMP",7,String(String(latesttemp.temp) + "." + String(latesttemp.temp_point)));
-      debug("TESTCHALLENGE",-1,MakeChallenge());   
+       
         debug("TESTHASH",-1,MakeHash("Test"));  
     // Serial.println(relay_toggle(33));
   }
+  debug("TESTCHALLENGE",-1,MakeChallenge());  
   digitalWrite(13, HIGH);
   delay(20) ;    
     digitalWrite(13, LOW);
@@ -157,8 +158,8 @@ void debug(String component, int subcomponent, String message){
 		Serial.print(subcomponent);
 		Serial.print(" - ");
 		Serial.println(message);
-  //  Serial.print("MEM/0 - Free:");
-    //Serial.println(freeMemory());
+    Serial.print("MEM/0 - Free:");
+    Serial.println(freeMemory());
 	}
 }
 
@@ -291,7 +292,7 @@ String MakeChallenge (){
    }
    challenge[16] = 0x00; //Add null terminator to string
 
-    String test(challenge);
+    String test = challenge + PSK;
     debug("HASH-PSK",-1,PSK); 
     debug("HASH-CHALLENGE",-1,test);
 
@@ -302,10 +303,10 @@ String MakeChallenge (){
 
    unsigned char* hash=MD5::make_hash( tochar );
    char* md5str = MD5::make_digest(hash, 16);
-
    debug("HASH",-1,String(md5str)); 
-   return (String(md5str));
+   String returnstring = String(md5str);
    free(md5str); // stupid malloc issue.
+   return (returnstring);
  }
 
 
@@ -319,9 +320,9 @@ String MakeHash (String test){
    unsigned char* hash=MD5::make_hash( tochar );
    char* md5str = MD5::make_digest(hash, 16);
 
-   debug("HASH",-1,String(md5str)); 
-   return (String(md5str));
+   String returnstring = String(md5str);
    free(md5str); // stupid malloc issue.
+   return (returnstring);
  }
 
 
