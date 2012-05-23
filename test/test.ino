@@ -8,6 +8,7 @@
 #include <utility/w5100.h> 
 #include <MD5.h>
 #include "WString.h"
+#include <avr/wdt.h> //watchdog timer
 
 
 String PSK="insertPSKhere";
@@ -37,9 +38,11 @@ void setup() {
 	debug("SERIAL",1,"STARTED"); 
   randomSeed(analogRead(0)); //randommize the ardiuno generotor
 	setup_temp(6);
+  setup_temp(7);
   setup_relays();
   setup_sdcard();
   setup_network();
+  wdt_enable(WDTO_4S);
 }
 
 byte read_dht11_dat(int DHT11_PIN)
@@ -122,6 +125,7 @@ dhtawesome CheckTemp(int DHT11_PIN){
  String templine;
 void loop()
 {
+    wdt_reset();
 
   if (nexttemp < millis()   ){ //2000ms timer
     nexttemp = millis() + 2000;
@@ -137,7 +141,7 @@ void loop()
     //Serial.println(relay_toggle(33));
     MakeHash();
   }
-  delay(20) ;       
+  delay(200000) ;       
 
 }
 
@@ -272,8 +276,7 @@ void ListFiles(EthernetClient client, uint8_t flags) {
 
 void MakeHash (){
   char challenge[17] ;
-  delay(2000);
-   for (int i=0; i <= 15; i++){
+  for (int i=0; i <= 15; i++){
   int randomnumber = random(1,62);
   if (randomnumber < 26){  
   challenge[i] = char(int(65)+randomnumber);
@@ -285,24 +288,19 @@ void MakeHash (){
 
    }
    challenge[16] = 0x00; //Add null terminator to string
-   
-      Serial.print("freeMemory()=");
-    Serial.println(freeMemory());
+
     String test(challenge);
-    Serial.print("PSK=");
-    Serial.println( PSK);
-    Serial.print("Challenge=");
-    Serial.println( test);
-    test = test + PSK;
-    Serial.print("Combined=");
-    Serial.println( test);
-    
-    char tochar[30];
+    debug("HASH-PSK",1,PSK); 
+    debug("HASH-CHALLENGE",1,test);
+
+    char tochar[30];      //TODO clean this shit up
    for (int i=0; i <= 29; i++){ 
    tochar[i] = test.charAt(i);
    }
+
    unsigned char* hash=MD5::make_hash( tochar );
-   char *md5str = MD5::make_digest(hash, 16);
-   Serial.print("Hash=");
-   Serial.println(md5str);
+   char* md5str = MD5::make_digest(hash, 16);
+
+   debug("HASH",1,String(md5str)); 
+   free(md5str); // stupid malloc issue.
 }
