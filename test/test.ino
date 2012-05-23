@@ -31,6 +31,10 @@ SdFile myFile;
 const int chipSelect = 4;
 
 
+/************ WEBSERVER STUFF ************/
+#define BUFSIZ 100
+
+
 void setup() {
 	Serial.begin(57600);
 	debug("SERIAL",-1,"STARTED"); 
@@ -126,7 +130,7 @@ dhtawesome CheckTemp(int DHT11_PIN){
  String templine;
 void loop()
 {
-  if (nexttemp < millis()   ){ //2000ms timer
+ /* if (nexttemp < millis()   ){ //2000ms timer
     nexttemp = millis() + 2000;
    dhtawesome latesttemp;
    latesttemp = CheckTemp(6);
@@ -141,18 +145,127 @@ void loop()
   debug("TESTCHALLENGE",-1, testchallenge.test);  
     debug("TESTCHALLENGE",-1,testchallenge.hash); 
     // Serial.println(relay_toggle(33));
+  } */
+
+
+ char clientline[BUFSIZ];
+  int index = 0;
+  
+  EthernetClient client = server.available();
+    
+  if (client) {
+    Serial.println("client av");
+    // an http request ends with a blank line
+    boolean current_line_is_blank = true;
+    
+    // reset the input buffer
+    index = 0;
+    
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+        
+        // If it isn't a new line, add the character to the buffer
+        if (c != '\n' && c != '\r') {
+          clientline[index] = c;
+          index++;
+          // are we too big for the buffer? start tossing out data
+          if (index >= BUFSIZ) 
+            index = BUFSIZ -1;
+          
+          // continue to read more data!
+          continue;
+        }
+        
+        // got a \n or \r new line, which means the string is done
+        clientline[index] = 0;
+        
+        // Print it out for debugging
+        Serial.println(clientline);
+        
+        // Look for substring such as a request to get the root file
+        if (strstr(clientline, "GET / ") != 0) {
+          // send a standard http response header
+          client.println("HTTP/1.1 200 OK");
+          client.println("Content-Type: text/html");
+          client.println();
+          
+          // print all the files, use a helper to keep it clean
+          client.println("<h2>Files:</h2>");
+          ListFiles(client, LS_SIZE);
+        } else if (strstr(clientline, "GET /relay/") != 0) {
+        char *relayname;
+        relayname = clientline + 11;
+
+        (strstr(clientline, " HTTP"))[0] = 0;
+        int relay=atoi(relayname);
+        Serial.println(relay);
+        if (relay_toggle(relay)) {
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-Type: text/html");
+            client.println();
+            client.println("Relay turned on");         
+        } else {
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-Type: text/html");
+            client.println();
+            client.println("Relay turned off");
+        }
+          // print all the files, use a helper to keep it clean
+        } else if (strstr(clientline, "GET /") != 0) {
+          // this time no space after the /, so a sub-file!
+          char *filename;
+          
+          filename = clientline + 5; // look after the "GET /" (5 chars)
+          // a little trick, look for the " HTTP/1.1" string and 
+          // turn the first character of the substring into a 0 to clear it out.
+          (strstr(clientline, " HTTP"))[0] = 0;
+          
+          // print the file we want
+          Serial.println(filename);
+
+          if (! file.open(&root, filename, O_READ)) {
+            client.println("HTTP/1.1 404 Not Found");
+            client.println("Content-Type: text/html");
+            client.println();
+            client.println("<h2>File Not Found!</h2>");
+            break;
+          }
+          
+          Serial.println("Opened!");
+                    
+          client.println("HTTP/1.1 200 OK");
+          client.println("Content-Type: text/plain");
+          client.println();
+          
+          int16_t c;
+          while ((c = file.read()) > 0) {
+              // uncomment the serial to debug (slow!)
+              //Serial.print((char)c);
+              client.print((char)c);
+          }
+          file.close();
+        } else {
+          // everything else is a 404
+          client.println("HTTP/1.1 404 Not Found");
+          client.println("Content-Type: text/html");
+          client.println();
+          client.println("<h2>File Not Found!</h2>");
+        }
+        break;
+      }
+    }
+    
+    // give the web browser time to receive the data
+    delay(5);
+    client.stop();
   }
 
-  digitalWrite(13, HIGH);
-  delay(20) ;    
-    digitalWrite(13, LOW);
+
+
+  delay(5) ;    
 
 }
-
-
-
-
-
 
 void debug(String component, int subcomponent, String message){
 	if (DEBUG_MESSAGES == true){
