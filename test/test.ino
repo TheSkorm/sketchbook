@@ -8,8 +8,6 @@
 #include <utility/w5100.h> 
 #include <MD5.h>
 #include "WString.h"
-#include <avr/wdt.h> //watchdog timer
-
 
 String PSK="insertPSKhere";
 
@@ -35,14 +33,13 @@ const int chipSelect = 4;
 
 void setup() {
 	Serial.begin(9600);
-	debug("SERIAL",1,"STARTED"); 
+	debug("SERIAL",-1,"STARTED"); 
   randomSeed(analogRead(0)); //randommize the ardiuno generotor
 	setup_temp(6);
   setup_temp(7);
   setup_relays();
   setup_sdcard();
   setup_network();
-  wdt_enable(WDTO_4S);
 }
 
 byte read_dht11_dat(int DHT11_PIN)
@@ -57,7 +54,8 @@ byte read_dht11_dat(int DHT11_PIN)
  
     if(PINF & _BV(DHT11_PIN)) 
       result |=(1<<(7-i));
-    while((PINF & _BV(DHT11_PIN)));  // wait '1' finish
+    unsigned long deadtimer = millis() + 500; //max wait is 100ms
+    while((PINF & _BV(DHT11_PIN)) && millis() < deadtimer);  // wait '1' finish
  
  
   }
@@ -103,8 +101,10 @@ dhtawesome CheckTemp(int DHT11_PIN){
   }
   delayMicroseconds(80);
   // now ready for data reception
-  for (i=0; i<5; i++)
+  for (i=0; i<5; i++){
     dht11_dat[i] = read_dht11_dat(DHT11_PIN);
+  }
+
  
   DDRF |= _BV(DHT11_PIN);
   PORTF |= _BV(DHT11_PIN);
@@ -114,22 +114,20 @@ dhtawesome CheckTemp(int DHT11_PIN){
   if(dht11_dat[4]!= dht11_check_sum)
   {
      debug("TEMP",DHT11_PIN,"DHT11 checksum error");
-  }
+  } else {
   current.humid = int(dht11_dat[0]);
   current.humid_point = int(dht11_dat[1]);
   current.temp = int(dht11_dat[2]);
   current.temp_point = int(dht11_dat[3]);
+  }
  return(current);
 }
 
  String templine;
 void loop()
 {
-    wdt_reset();
-
   if (nexttemp < millis()   ){ //2000ms timer
     nexttemp = millis() + 2000;
-
    dhtawesome latesttemp;
    latesttemp = CheckTemp(6);
     debug("HUMID",6,String(String(latesttemp.humid) + "." + String(latesttemp.humid_point)));
@@ -137,11 +135,13 @@ void loop()
    latesttemp = CheckTemp(7);
     debug("HUMID",7,String(String(latesttemp.humid) + "." + String(latesttemp.humid_point)));
     debug("TEMP",7,String(String(latesttemp.temp) + "." + String(latesttemp.temp_point)));
-
+      MakeHash();   
     //Serial.println(relay_toggle(33));
-    MakeHash();
+   // MakeHash();
   }
-  delay(200000) ;       
+  digitalWrite(13, HIGH);
+  delay(20) ;    
+    digitalWrite(13, LOW);
 
 }
 
@@ -157,8 +157,8 @@ void debug(String component, int subcomponent, String message){
 		Serial.print(subcomponent);
 		Serial.print(" - ");
 		Serial.println(message);
-    Serial.print("MEM/0 - Free:");
-    Serial.println(freeMemory());
+  //  Serial.print("MEM/0 - Free:");
+    //Serial.println(freeMemory());
 	}
 }
 
@@ -190,28 +190,29 @@ void setup_relays(){
 }
 
 void setup_sdcard(){
+    debug("SD",-1,"STARTING");
  // initialize the SD card at SPI_HALF_SPEED to avoid bus errors with
   // breadboards.  use SPI_FULL_SPEED for better performance.
   pinMode(10, OUTPUT);                       // set the SS pin as an output (necessary!)
   digitalWrite(10, HIGH);                    // but turn off the W5100 chip!
 
-  if (!card.init(SPI_HALF_SPEED, 4)) debug("SD",10,"CARD INIT FAILED");
+  if (!card.init(SPI_HALF_SPEED, 4)) debug("SD",-1,"CARD INIT FAILED");
   
   // initialize a FAT volume
-  if (!volume.init(&card)) debug("SD",10,"VOLUME INIT FAILED");
+  if (!volume.init(&card)) debug("SD",-1,"VOLUME INIT FAILED");
 
-  if (!root.openRoot(&volume)) debug("SD",10,"OPEN ROOT FAILED");
+  if (!root.openRoot(&volume)) debug("SD",-1,"OPEN ROOT FAILED");
   
-
+    debug("SD",-1,"STARTED");
 }
 
 void setup_network(){
-
+    debug("NETWORK",-1,"STARTING");
   Ethernet.begin(mac);
   W5100.setRetransmissionTime(0x07D0); // This code is meant to stoy lock ups with wiznet
   W5100.setRetransmissionCount(3); 
   server.begin();
-
+    debug("NETWORK",-1,"STARTED");
   }
 
 
@@ -275,6 +276,7 @@ void ListFiles(EthernetClient client, uint8_t flags) {
 }
 
 void MakeHash (){
+  debug("HASH",-1,"HASHING"); 
   char challenge[17] ;
   for (int i=0; i <= 15; i++){
   int randomnumber = random(1,62);
@@ -290,8 +292,8 @@ void MakeHash (){
    challenge[16] = 0x00; //Add null terminator to string
 
     String test(challenge);
-    debug("HASH-PSK",1,PSK); 
-    debug("HASH-CHALLENGE",1,test);
+    debug("HASH-PSK",-1,PSK); 
+    debug("HASH-CHALLENGE",-1,test);
 
     char tochar[30];      //TODO clean this shit up
    for (int i=0; i <= 29; i++){ 
@@ -301,6 +303,6 @@ void MakeHash (){
    unsigned char* hash=MD5::make_hash( tochar );
    char* md5str = MD5::make_digest(hash, 16);
 
-   debug("HASH",1,String(md5str)); 
+   debug("HASH",-1,String(md5str)); 
    free(md5str); // stupid malloc issue.
 }
