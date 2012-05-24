@@ -225,9 +225,9 @@ void loop()
               upto++;
          }
 
-          debug("TOKEN2",-1, args[1] + args[2] + args[3] + args[4]+args[5] + args[6] + args[7] + PSK);
+          debug("TOKEN2",-1, currenttoken + PSK +args[1] + args[2] + args[3] + args[4]+args[5] + args[6] + args[7]);
        //   debug("TOKEN2",-1,MakeHash(args[2] + args[3] + args[4]+args[5] + args[6] + args[7] + PSK));
-          if (MakeHash(args[1] + args[2] + args[3] + args[4]+args[5] + args[6] + args[7] + PSK) == args[0]){
+          if (MakeHash(currenttoken + PSK +args[1] + args[2] + args[3] + args[4]+args[5] + args[6] + args[7] ) == args[0]){
                          client.println("HTTP/1.1 200 OK");
             client.println("Content-Type: text/html");
             client.println();
