@@ -154,7 +154,6 @@ void loop()
   EthernetClient client = server.available();
     
   if (client) {
-    Serial.println("client av");
     // an http request ends with a blank line
     boolean current_line_is_blank = true;
     
@@ -180,8 +179,6 @@ void loop()
         // got a \n or \r new line, which means the string is done
         clientline[index] = 0;
         
-        // Print it out for debugging
-        Serial.println(clientline);
         
         // Look for substring such as a request to get the root file
         if (strstr(clientline, "GET / ") != 0) {
@@ -199,8 +196,7 @@ void loop()
 
         (strstr(clientline, " HTTP"))[0] = 0;
         int relay=atoi(relayname);
-        Serial.println(relay);
-        if (relay_toggle(relay)) {
+                if (relay_toggle(relay)) {
             client.println("HTTP/1.1 200 OK");
             client.println("Content-Type: text/html");
             client.println();
@@ -220,9 +216,6 @@ void loop()
           // a little trick, look for the " HTTP/1.1" string and 
           // turn the first character of the substring into a 0 to clear it out.
           (strstr(clientline, " HTTP"))[0] = 0;
-          
-          // print the file we want
-          Serial.println(filename);
 
           if (! file.open(&root, filename, O_READ)) {
             client.println("HTTP/1.1 404 Not Found");
@@ -231,9 +224,7 @@ void loop()
             client.println("<h2>File Not Found!</h2>");
             break;
           }
-          
-          Serial.println("Opened!");
-                    
+                              
           client.println("HTTP/1.1 200 OK");
           client.println("Content-Type: text/plain");
           client.println();
@@ -257,13 +248,11 @@ void loop()
     }
     
     // give the web browser time to receive the data
-    delay(5);
+    delay(2);
     client.stop();
   }
 
 
-
-  delay(5) ;    
 
 }
 
