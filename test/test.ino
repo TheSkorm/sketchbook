@@ -9,7 +9,7 @@
 #include <MD5.h>
 #include "WString.h"
 
-String PSK="insertPSKhere";
+String PSK="insertPSKhere"; // TODO multi PSKs read off SD card or something
 
 /************ TEMP/HUMID STUFF ************/
 //#define DHT11_PIN 6      // ADC0
@@ -209,9 +209,22 @@ void loop()
         }
         } else if (strstr(clientline, "GET /t/") != 0) {
         char *check;
+        String args[8];
+        int upto = 0;
         check = clientline + 7;
         (strstr(clientline, " HTTP"))[0] = 0;
-        debug("TOKEN",-1,String(check));
+        char * pnt;
+        char dem[] = "/";
+        pnt=strtok(check, dem);
+         while (pnt != NULL && upto < 8){
+
+              debug("TOKEN",-1,pnt);
+              args[upto] = pnt;
+              pnt=strtok(NULL, dem);
+              upto++;
+         }
+
+
         if (String(check) == String(currenttoken)){
 
           debug("TOKEN",-1, "Passed Auth");
