@@ -225,14 +225,25 @@ void loop()
          }
 
 
-        if (String(check) == String(currenttoken)){
-
+        if (args[0] == String(currenttoken)){
+                         client.println("HTTP/1.1 404 Not Found");
+            client.println("Content-Type: text/html");
+            client.println();
+            client.println("Passed Auth");
           debug("TOKEN",-1, "Passed Auth");
+        } else {
+                                   client.println("HTTP/1.1 404 Not Found");
+            client.println("Content-Type: text/html");
+            client.println();
+            client.println("Failed Auth");
         }
 
         } else if (strstr(clientline, "GET /t ") != 0) {
           challengetype testchallenge = MakeChallenge();
           currenttoken = testchallenge.hash;
+          client.println("HTTP/1.1 404 Not Found");
+          client.println("Content-Type: text/html");
+          client.println();
           client.println(testchallenge.test); 
 
           // print all the files, use a helper to keep it clean
