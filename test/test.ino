@@ -33,7 +33,7 @@ const int chipSelect = 4;
 
 /************ WEBSERVER STUFF ************/
 #define BUFSIZ 100
-
+String currenttoken;
 
 void setup() {
 	Serial.begin(57600);
@@ -207,6 +207,21 @@ void loop()
             client.println();
             client.println("Relay turned off");
         }
+        } else if (strstr(clientline, "GET /t/") != 0) {
+        char *check;
+        check = clientline + 7;
+        (strstr(clientline, " HTTP"))[0] = 0;
+        debug("TOKEN",-1,String(check));
+        if (String(check) == String(currenttoken)){
+
+          debug("TOKEN",-1, "Passed Auth");
+        }
+
+        } else if (strstr(clientline, "GET /t ") != 0) {
+          challengetype testchallenge = MakeChallenge();
+          currenttoken = testchallenge.hash;
+          client.println(testchallenge.test); 
+
           // print all the files, use a helper to keep it clean
         } else if (strstr(clientline, "GET /") != 0) {
           // this time no space after the /, so a sub-file!
@@ -412,6 +427,7 @@ challengetype MakeChallenge (){
    debug("HASH",-1,String(md5str)); 
    returnchallenge.test = challenge;
    returnchallenge.hash = String(md5str);
+   returnchallenge.hash.toLowerCase();
    free(md5str); // stupid malloc issue.
    return (returnchallenge);
  }
@@ -428,6 +444,7 @@ String MakeHash (String test){
    char* md5str = MD5::make_digest(hash, 16);
 
    String returnstring = String(md5str);
+   returnstring.toLowerCase();
    free(md5str); // stupid malloc issue.
    return (returnstring);
  }
