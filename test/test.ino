@@ -34,7 +34,6 @@ const int chipSelect = 4;
 /************ WEBSERVER STUFF ************/
 #define BUFSIZ 100
 String currenttoken;
-String currentchallenge;
 
 void setup() {
 	Serial.begin(57600);
@@ -226,7 +225,7 @@ void loop()
               upto++;
          }
 
-        if (args[0] == String(currenttoken)){
+        if (args[0] == MakeHash(args[2] + args[3] + args[4]+args[5] + args[6] + args[7] + currenttoken + PSK)){
        //   debug("TOKEN2",-1, args[2] + args[3] + args[4]+args[5] + args[6] + args[7] + PSK);
        //   debug("TOKEN2",-1,MakeHash(args[2] + args[3] + args[4]+args[5] + args[6] + args[7] + PSK));
           if (MakeHash(args[2] + args[3] + args[4]+args[5] + args[6] + args[7] + PSK) == args[1]){
@@ -260,7 +259,7 @@ void loop()
           client.println("Content-Type: text/html");
           client.println();
           refreshtoken();
-          client.println(currentchallenge); 
+          client.println(currenttoken); 
 
           // print all the files, use a helper to keep it clean
         } else if (strstr(clientline, "GET /") != 0) {
@@ -436,8 +435,7 @@ void ListFiles(EthernetClient client, uint8_t flags) {
   client.println("</ul>");
 }
 
-challengetype MakeChallenge (){
-  challengetype returnchallenge;
+String MakeChallenge (){
   debug("HASH",-1,"HASHING CHALLENGE"); 
   char challenge[17] ;
   for (int i=0; i <= 15; i++){
@@ -452,24 +450,8 @@ challengetype MakeChallenge (){
 
    }
    challenge[16] = 0x00; //Add null terminator to string
-
-    String test = challenge + PSK;
-    debug("HASH-PSK",-1,PSK); 
-    debug("HASH-CHALLENGE",-1,test);
-
-    char tochar[30];      //TODO clean this shit up
-   for (int i=0; i <= 29; i++){ 
-   tochar[i] = test.charAt(i);
-   }
-
-   unsigned char* hash=MD5::make_hash( tochar );
-   char* md5str = MD5::make_digest(hash, 16);
-   debug("HASH",-1,String(md5str)); 
-   returnchallenge.test = challenge;
-   returnchallenge.hash = String(md5str);
-   returnchallenge.hash.toLowerCase();
-   free(md5str); // stupid malloc issue.
-   return (returnchallenge);
+    debug("HASH-CHALLENGE",-1,challenge);
+   return (String(challenge));
  }
 
 
@@ -491,8 +473,6 @@ String MakeHash (String test){
 
 
 void refreshtoken(){
-          challengetype testchallenge = MakeChallenge();
-          currenttoken = testchallenge.hash;
-          currentchallenge = testchallenge.test;
+          currenttoken = MakeChallenge();
 }
 
