@@ -427,7 +427,7 @@ void ListFiles(EthernetClient client, uint8_t flags) {
 }
 
 String MakeChallenge (){
-  debug("HASH",-1,"HASHING CHALLENGE"); 
+  debug("CHALLENGE",-1,"GENERATING CHALLENGE"); 
   char challenge[17] ;
   for (int i=0; i <= 15; i++){
   int randomnumber = random(1,62);
@@ -441,17 +441,17 @@ String MakeChallenge (){
 
    }
    challenge[16] = 0x00; //Add null terminator to string
-    debug("HASH-CHALLENGE",-1,challenge);
+    debug("CHALLENGE",-1,challenge);
    return (String(challenge));
  }
 
 
 String MakeHash (String test){
-      debug("HASH",-1,"HASHING"); 
-    char tochar[30];      //TODO clean this shit up
-   for (int i=0; i <= 29; i++){ 
+    char tochar[255];      //TODO clean this shit up
+   for (int i=0; i < 255; i++){ 
    tochar[i] = test.charAt(i);
    }
+      debug("HASH",-1,"HASHING " + String(tochar)); 
 
    unsigned char* hash=MD5::make_hash( tochar );
    char* md5str = MD5::make_digest(hash, 16);
@@ -459,6 +459,7 @@ String MakeHash (String test){
    String returnstring = String(md5str);
    returnstring.toLowerCase();
    free(md5str); // stupid malloc issue.
+   debug("HASH",-1,returnstring);
    return (returnstring);
  }
 
