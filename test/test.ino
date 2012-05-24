@@ -34,6 +34,7 @@ const int chipSelect = 4;
 /************ WEBSERVER STUFF ************/
 #define BUFSIZ 100
 String currenttoken;
+String currentchallenge;
 
 void setup() {
 	Serial.begin(57600);
@@ -44,6 +45,7 @@ void setup() {
   setup_relays();
   setup_sdcard();
   setup_network();
+  refreshtoken();
 }
 
 byte read_dht11_dat(int DHT11_PIN)
@@ -190,7 +192,7 @@ void loop()
           // print all the files, use a helper to keep it clean
           client.println("<h2>Files:</h2>");
           ListFiles(client, LS_SIZE);
-        } else if (strstr(clientline, "GET /relay/") != 0) {
+        /* } else if (strstr(clientline, "GET /relay/") != 0) {
         char *relayname;
         relayname = clientline + 11;
 
@@ -206,7 +208,7 @@ void loop()
             client.println("Content-Type: text/html");
             client.println();
             client.println("Relay turned off");
-        }
+        } */
         } else if (strstr(clientline, "GET /t/") != 0) {
         char *check;
         String args[8];
@@ -224,27 +226,40 @@ void loop()
               upto++;
          }
 
-
         if (args[0] == String(currenttoken)){
-                         client.println("HTTP/1.1 404 Not Found");
+          if (MakeHash(args[2] + args[3] + args[4]+args[5] + args[6] + args[7]) == args[1]){
+            debug("TOKEN",-1,MakeHash(args[2] + args[3] + args[4]+args[5] + args[6] + args[7] + PSK));
+                         client.println("HTTP/1.1 200 OK");
             client.println("Content-Type: text/html");
             client.println();
             client.println("Passed Auth");
           debug("TOKEN",-1, "Passed Auth");
         } else {
-                                   client.println("HTTP/1.1 404 Not Found");
+                                   client.println("HTTP/1.1 200 OK");
+            client.println("Content-Type: text/html");
+            client.println();
+            client.println("Failed checksum");
+          debug("TOKEN",-1, "Failed checksum");
+
+        }
+
+            refreshtoken();
+        } else {
+                                   client.println("HTTP/1.1 200 OK");
             client.println("Content-Type: text/html");
             client.println();
             client.println("Failed Auth");
+          debug("TOKEN",-1, "Failed Auth");
+          refreshtoken();
+
         }
 
         } else if (strstr(clientline, "GET /t ") != 0) {
-          challengetype testchallenge = MakeChallenge();
-          currenttoken = testchallenge.hash;
           client.println("HTTP/1.1 404 Not Found");
           client.println("Content-Type: text/html");
           client.println();
-          client.println(testchallenge.test); 
+          refreshtoken();
+          client.println(currentchallenge); 
 
           // print all the files, use a helper to keep it clean
         } else if (strstr(clientline, "GET /") != 0) {
@@ -474,5 +489,9 @@ String MakeHash (String test){
  }
 
 
-
+void refreshtoken(){
+          challengetype testchallenge = MakeChallenge();
+          currenttoken = testchallenge.hash;
+          currentchallenge = testchallenge.test;
+}
 
