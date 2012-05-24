@@ -228,11 +228,25 @@ void loop()
           debug("TOKEN2",-1, currenttoken + PSK +args[1] + args[2] + args[3] + args[4]+args[5] + args[6] + args[7]);
        //   debug("TOKEN2",-1,MakeHash(args[2] + args[3] + args[4]+args[5] + args[6] + args[7] + PSK));
           if (MakeHash(currenttoken + PSK +args[1] + args[2] + args[3] + args[4]+args[5] + args[6] + args[7] ) == args[0]){
-                         client.println("HTTP/1.1 200 OK");
+          debug("TOKEN",-1, "Passed Auth");
+
+if (args[1] == "output"){
+  char name[args[2].length()];
+  for (int i=0; i < args[2].length() ; i++){
+   name[i] = args[2].charAt(i);}
+        int relay=atoi(name);
+         if (relay_toggle(relay)) {
+            client.println("HTTP/1.1 200 OK");
             client.println("Content-Type: text/html");
             client.println();
-            client.println("Passed Auth");
-          debug("TOKEN",-1, "Passed Auth");
+            client.println("Relay turned on");         
+        } else {
+            client.println("HTTP/1.1 200 OK");
+            client.println("Content-Type: text/html");
+            client.println();
+            client.println("Relay turned off");
+        }
+}
 
             refreshtoken();
         } else {
