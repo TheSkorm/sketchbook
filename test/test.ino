@@ -125,23 +125,6 @@ dhtawesome CheckTemp(int DHT11_PIN) {
 
 String templine;
 void loop() {
-	/* if (nexttemp < millis()   ){ //2000ms timer
-	 nexttemp = millis() + 2000;
-	 dhtawesome latesttemp;
-	 latesttemp = CheckTemp(6);
-	 debug("HUMID",6,String(String(latesttemp.humid) + "." + String(latesttemp.humid_point)));
-	 debug("TEMP",6,String(String(latesttemp.temp) + "." + String(latesttemp.temp_point)));
-	 latesttemp = CheckTemp(7);
-	 debug("HUMID",7,String(String(latesttemp.humid) + "." + String(latesttemp.humid_point)));
-	 debug("TEMP",7,String(String(latesttemp.temp) + "." + String(latesttemp.temp_point)));
-
-	 debug("TESTHASH",-1,MakeHash("Test"));
-	 challengetype testchallenge = MakeChallenge();
-	 debug("TESTCHALLENGE",-1, testchallenge.test);
-	 debug("TESTCHALLENGE",-1,testchallenge.hash);
-	 // Serial.println(relay_toggle(33));
-	 } */
-
 	char clientline[BUFSIZ];
 	int index = 0;
 
@@ -179,27 +162,8 @@ void loop() {
 					client.println("HTTP/1.1 200 OK");
 					client.println("Content-Type: text/html");
 					client.println();
+					client.println("<!DOCTYPE html><html><head><script src=\"http://www.webtoolkit.info/djs/webtoolkit.md5.js\"></script><script>var script = document.createElement('script');script.setAttribute('src','/t');document.getElementsByTagName('head')[0].appendChild(script);function token(response){document.getElementsByName('Token')[0].value = response.token;};</script></head><body><form action=\"\">Token: <input type=\"text\" name=\"Token\" /><br />PSK: <input type=\"text\" name=\"PSK\" value=\"insertPSKhere\" /><br />Action: <input type=\"text\" name=\"Action\" value=\"output\"/><br />Arg: <input type=\"text\" value=\"13\" name=\"Arg\" onkeyup=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value)\"/><br />Hash: <input type=\"text\" name=\"Hash\" /><input type=button value=\"Submit\" onClick=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value); window.location = \'t/\' + this.form.Hash.value +'/' + this.form.Action.value +'/'+ this.form.Arg.value ;\"></form></body></html>");
 
-					// print all the files, use a helper to keep it clean
-					client.println("<h2>Files:</h2>");
-					ListFiles(client, LS_SIZE);
-					/* } else if (strstr(clientline, "GET /relay/") != 0) {
-					 char *relayname;
-					 relayname = clientline + 11;
-
-					 (strstr(clientline, " HTTP"))[0] = 0;
-					 int relay=atoi(relayname);
-					 if (relay_toggle(relay)) {
-					 client.println("HTTP/1.1 200 OK");
-					 client.println("Content-Type: text/html");
-					 client.println();
-					 client.println("Relay turned on");
-					 } else {
-					 client.println("HTTP/1.1 200 OK");
-					 client.println("Content-Type: text/html");
-					 client.println();
-					 client.println("Relay turned off");
-					 } */
 				} else if (strstr(clientline, "GET /t/") != 0) {
 					char *check;
 					String args[8];
@@ -248,7 +212,7 @@ void loop() {
 
 						refreshtoken();
 					} else {
-						client.println("HTTP/1.1 200 OK");
+						client.println("HTTP/1.1 403 Forbidden");
 						client.println("Content-Type: text/html");
 						client.println();
 						client.println("Failed Auth");
@@ -256,13 +220,21 @@ void loop() {
 						refreshtoken();
 
 					}
-
+				} else if (strstr(clientline, "GET /a ") != 0) {
+					client.println("HTTP/1.1 200 OK");
+					client.println("Content-Type: text/html");
+					client.println();
+					client.println("var digitaloutputs= {");
+					for (int i = 22; i < 35; i++){
+						client.println(String(String(i)+":"+String(digitalRead(i))));
+					}					
+					client.println("}");
 				} else if (strstr(clientline, "GET /t ") != 0) {
-					client.println("HTTP/1.1 404 Not Found");
+					client.println("HTTP/1.1 200 OK");
 					client.println("Content-Type: text/html");
 					client.println();
 					refreshtoken();
-					client.println(currenttoken);
+					client.println("token({\"token\": \"" + currenttoken + "\"});");
 
 					// print all the files, use a helper to keep it clean
 				} else if (strstr(clientline, "GET /") != 0) {
