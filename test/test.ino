@@ -215,6 +215,7 @@ void loop() {
 						client.println("HTTP/1.1 403 Forbidden");
 						client.println("Content-Type: text/html");
 						client.println();
+						delay(200);
 						client.println("Failed Auth");
 						debug("TOKEN", -1, "Failed Auth");
 						refreshtoken();
