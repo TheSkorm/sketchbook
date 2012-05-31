@@ -434,15 +434,10 @@ String MakeChallenge() {
 }
 
 String MakeHash(String test) {
-	char tochar[255]; //TODO clean this shit up
-	for (int i = 0; i < 255; i++) {
-		tochar[i] = test.charAt(i);
-	}
 	char tochar[test.length()];
-	for (int i = 0; i < test[2].length(); i++) {
+	for (int i = 0; i < test.length(); i++) {
 		tochar[i] = test.charAt(i);
 	}
-	int relay = atoi(name);
 	debug("HASH", -1, "HASHING " + String(tochar));
 
 	unsigned char* hash = MD5::make_hash(tochar);

@@ -13,8 +13,8 @@ returns back json with status of all inputs and output. If correct hash returns 
 
 == Anyone with correct hash or on the localnet 
 /config
-returns back json with config of pins
+returns back json with config of pins or something
 {
  1 : [{"description": "Lounge Room Light", "type": "relay"}],
- 2 : [{"description": "Temp", "type": "r"}],
+ 2 : [{"description": "Outside Temp", "type": "temp"}],
 }
