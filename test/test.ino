@@ -184,7 +184,6 @@ void loop() {
 					debug("TOKEN2", -1,
 							currenttoken + PSK + args[1] + args[2] + args[3]
 									+ args[4] + args[5] + args[6] + args[7]);
-					//   debug("TOKEN2",-1,MakeHash(args[2] + args[3] + args[4]+args[5] + args[6] + args[7] + PSK));
 					if (MakeHash(
 							currenttoken + PSK + args[1] + args[2] + args[3]
 									+ args[4] + args[5] + args[6] + args[7])
@@ -439,6 +438,11 @@ String MakeHash(String test) {
 	for (int i = 0; i < 255; i++) {
 		tochar[i] = test.charAt(i);
 	}
+	char tochar[test.length()];
+	for (int i = 0; i < test[2].length(); i++) {
+		tochar[i] = test.charAt(i);
+	}
+	int relay = atoi(name);
 	debug("HASH", -1, "HASHING " + String(tochar));
 
 	unsigned char* hash = MD5::make_hash(tochar);
