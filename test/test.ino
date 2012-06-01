@@ -166,7 +166,7 @@ void loop() {
 
 				} else if (strstr(clientline, "GET /t/") != 0) {
 					char *check;
-					String args[8];
+					String args[8] = "";
 					int upto = 0;
 					check = clientline + 7;
 					(strstr(clientline, " HTTP"))[0] = 0;
@@ -191,6 +191,9 @@ void loop() {
 						debug("TOKEN", -1, "Passed Auth");
 
 						if (args[1] == "output") {
+							client.println("HTTP/1.1 200 OK");
+							client.println("Content-Type: application/javascript");	
+							client.println();
 							char name[args[2].length()];
 							for (int i = 0; i < args[2].length(); i++) {
 								name[i] = args[2].charAt(i);
@@ -199,10 +202,10 @@ void loop() {
 							output_toggle(output);
 							client.println("status({");
 							for (int i = 22; i < 35; i++){
-								client.println(String(i)+":"+String(digitalRead(i))+",");
+								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
 							}
 							for (int i = 0; i < 15; i++){
-								client.println(String(i)+":"+String(analogRead(i))+",");
+								client.println("\"A" + String(i)+"\":"+String(analogRead(i))+",");
 							}
 							client.println("});");
 						} else if (args[1] == "status") {
@@ -211,10 +214,10 @@ void loop() {
 							client.println();
 							client.println("status({");
 							for (int i = 22; i < 35; i++){
-								client.println(String(i)+":"+String(digitalRead(i))+",");
+								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
 							}
 							for (int i = 0; i < 15; i++){
-								client.println(String(i)+":"+String(analogRead(i))+",");
+								client.println("\"A" + String(i)+"\":"+String(analogRead(i))+",");
 							}
 							client.println("});");
 						}					
@@ -291,8 +294,8 @@ void debug(String component, int subcomponent, String message) {
 		Serial.print(subcomponent);
 		Serial.print(" - ");
 		Serial.println(message);
-		Serial.print("MEM/0 - Free:");
-		Serial.println(freeMemory());
+	//	Serial.print("MEM/0 - Free:");
+	//	Serial.println(freeMemory());
 	} 
 }
 
@@ -435,10 +438,11 @@ String MakeChallenge() {
 }
 
 String MakeHash(String test) {
-	char tochar[test.length()];
+	char tochar[test.length() + 1];
 	for (int i = 0; i < test.length(); i++) {
 		tochar[i] = test.charAt(i);
 	}
+	tochar[test.length()] = NULL;
 	debug("HASH", -1, "HASHING " + String(tochar));
 
 	unsigned char* hash = MD5::make_hash(tochar);
