@@ -39,7 +39,7 @@ void setup() {
 	randomSeed(analogRead(0)); //randommize the ardiuno generotor
 	setup_temp(6);
 	setup_temp(7);
-	setup_relays();
+	setup_pins();
 	setup_sdcard();
 	setup_network();
 	refreshtoken();
@@ -195,45 +195,46 @@ void loop() {
 							for (int i = 0; i < args[2].length(); i++) {
 								name[i] = args[2].charAt(i);
 							}
-							int relay = atoi(name);
-							if (relay_toggle(relay)) {
-								client.println("HTTP/1.1 200 OK");
-								client.println("Content-Type: text/html");
-								client.println();
-								client.println("Relay turned on");
-							} else {
-								client.println("HTTP/1.1 200 OK");
-								client.println("Content-Type: text/html");
-								client.println();
-								client.println("Relay turned off");
+							int output = atoi(name);
+							output_toggle(output);
+							client.println("status({");
+							for (int i = 22; i < 35; i++){
+								client.println(String(i)+":"+String(digitalRead(i))+",");
 							}
-						}
-
+							for (int i = 0; i < 15; i++){
+								client.println(String(i)+":"+String(analogRead(i))+",");
+							}
+							client.println("});");
+						} else if (args[1] == "status") {
+							client.println("HTTP/1.1 200 OK");
+							client.println("Content-Type: application/javascript");
+							client.println();
+							client.println("status({");
+							for (int i = 22; i < 35; i++){
+								client.println(String(i)+":"+String(digitalRead(i))+",");
+							}
+							for (int i = 0; i < 15; i++){
+								client.println(String(i)+":"+String(analogRead(i))+",");
+							}
+							client.println("});");
+						}					
 						refreshtoken();
 					} else {
 						client.println("HTTP/1.1 403 Forbidden");
 						client.println("Content-Type: text/html");
 						client.println();
 						delay(200);
-						client.println("Failed Auth");
+						client.println("403 - Failed Auth");
 						debug("TOKEN", -1, "Failed Auth");
 						refreshtoken();
 
 					}
-				} else if (strstr(clientline, "GET /a ") != 0) {
-					client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: text/html");
-					client.println();
-					client.println("var digitaloutputs= {");
-					for (int i = 22; i < 35; i++){
-						client.println(String(String(i)+":"+String(digitalRead(i))));
-					}					
-					client.println("}");
+
 				} else if (strstr(clientline, "GET /t ") != 0) {
 					client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: text/html");
+					client.println("Content-Type: application/javascript");
 					client.println();
-					refreshtoken();
+				//	refreshtoken();
 					client.println("token({\"token\": \"" + currenttoken + "\"});");
 
 					// print all the files, use a helper to keep it clean
@@ -292,7 +293,7 @@ void debug(String component, int subcomponent, String message) {
 		Serial.println(message);
 		Serial.print("MEM/0 - Free:");
 		Serial.println(freeMemory());
-	}
+	} 
 }
 
 void setup_temp(int DHT11_PIN) {
@@ -301,24 +302,24 @@ void setup_temp(int DHT11_PIN) {
 	debug("TEMP", DHT11_PIN, "STARTED");
 }
 
-bool relay_toggle(int RELAY_PIN) {
-	if (digitalRead(RELAY_PIN) == HIGH) {
-		digitalWrite(RELAY_PIN, LOW);
-		debug("RELAY", RELAY_PIN, "TOGGLED OFF");
+bool output_toggle(int OUTPUT_PIN) {
+	if (digitalRead(OUTPUT_PIN) == HIGH) {
+		digitalWrite(OUTPUT_PIN, LOW);
+		debug("RELAY", OUTPUT_PIN, "TOGGLED OFF");
 		return (false);
 	} else {
-		digitalWrite(RELAY_PIN, HIGH);
-		debug("RELAY", RELAY_PIN, "TOGGLED ON");
+		digitalWrite(OUTPUT_PIN, HIGH);
+		debug("RELAY", OUTPUT_PIN, "TOGGLED ON");
 		return (true);
 	}
 }
 
-void setup_relays() {
-	debug("RELAYS", -1, "STARTING");
+void setup_pins() {
+	debug("OUTPUTS", -1, "STARTING");
 	pinMode(13, OUTPUT);
-	pinMode(33, OUTPUT);
-	pinMode(35, OUTPUT);
-	debug("RELAYS", -1, "STARTED");
+	for (int i = 22; i < 35; i++){
+		pinMode(i, OUTPUT);	}
+	debug("OUTPUTS", -1, "STARTED");
 }
 
 void setup_sdcard() {

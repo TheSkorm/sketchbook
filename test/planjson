@@ -5,7 +5,7 @@ gets current token
 
 == Anyone with correct hash or on the localnet 
 /t/%hash%/output/?  
-toggles an output on or off returns back json with true or false and the pin. Only allows access to door lock if hash correct
+toggles an output on or off returns back json with the status of ewerything and the pin. Only allows access to door lock if hash correct
 
 == Anyone with correct hash or on the localnet 
 /t/%hash%/status
