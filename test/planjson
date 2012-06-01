@@ -15,6 +15,7 @@ returns back json with status of all inputs and output. If correct hash returns 
 /config
 returns back json with config of pins or something
 {
- 1 : [{"description": "Lounge Room Light", "type": "relay"}],
- 2 : [{"description": "Outside Temp", "type": "temp"}],
+ "D33" : [{"description": "Lounge Room Light", "type": "switch"}],
+ "D3" : [{"description": "Outside Temp", "type": "temp"}],
+ "A1" : [{"description": "Light Sensor", "type": "light"}],
 }

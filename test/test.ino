@@ -43,6 +43,20 @@ void setup() {
 	setup_sdcard();
 	setup_network();
 	refreshtoken();
+
+/* if (!sd.init(SPI_HALF_SPEED, chipSelect)) sd.initErrorHalt();  // Code to make the json config file
+sd.remove("config.js");
+ if (!myFile.open("config.js", O_RDWR | O_CREAT | O_AT_END)) {
+    sd.errorHalt("opening config.js for write failed");
+ }
+ myFile.println("config({");
+ myFile.println("\"D33\" : [{\"description\": \"Lounge Room Light\", \"type\": \"switch\"}],");
+ myFile.println("\"D3\" : [{\"description\": \"Outside Temp\", \"type\": \"temp\"}],");
+ myFile.println("\"A1\" : [{\"description\": \"Light Sensor\", \"type\": \"light\"}],");
+ myFile.println("  });");
+
+    myFile.close();
+*/
 }
 
 byte read_dht11_dat(int DHT11_PIN) {
@@ -332,7 +346,7 @@ void setup_sdcard() {
 	pinMode(10, OUTPUT); // set the SS pin as an output (necessary!)
 	digitalWrite(10, HIGH); // but turn off the W5100 chip!
 
-	if (!card.init(SPI_HALF_SPEED, 4))
+	if (!card.init(SPI_FULL_SPEED, 4))
 		debug("SD", -1, "CARD INIT FAILED");
 
 	// initialize a FAT volume
