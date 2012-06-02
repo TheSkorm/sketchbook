@@ -54,7 +54,7 @@ document.getElementById(pin).selectedIndex = response[pin];
 
 function refreshdata (){
 getstatus();
-console.log("Refreshed");
+//console.log("Refreshed");
 }
 
 function config(response){
@@ -70,7 +70,7 @@ $('#togglelist').append("<div data-role=\"fieldcontain\"><fieldset data-role=\"c
 
 $(function(){
 $( ".switch" ).change(function() {
-  var hash = MD5(tokenvalue + psk.value + "output" + $(this)[0].id.replace("D","") ); 
+  var hash = MD5(tokenvalue + document.getElementById("psk").value + "output" + $(this)[0].id.replace("D","") ); 
   $.ajax({
   url: 'http://59.167.158.119/t/' + hash + $(this)[0].id.replace("D","/output/"),
   dataType: "script",
@@ -158,5 +158,5 @@ startupconfig();
             //App custom javascript
         </script>
     </body>
-    
+
 </html>

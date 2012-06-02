@@ -15,7 +15,10 @@ String tokens[3];
 int currenttoken = 0;
 unsigned long lastkeychange = 0 ;
 
-
+/************ AC stuff ************/
+unsigned long lastaccheck = 0 ;
+int maxac[15];
+int laststate[15];
 
 /************ TEMP/HUMID STUFF ************/
 //#define DHT11_PIN 6      // ADC0
@@ -155,6 +158,16 @@ void loop() {
           lastkeychange = currentMillis;
         refreshtoken();
         }
+        
+        if ( currentMillis - lastaccheck > 500 ){
+          lastaccheck = currentMillis;
+laststate[10] = maxac[10];
+maxac[10] = 0;        
+}
+        int accurrent = analogRead(10);
+        if (accurrent > maxac[10]){
+           maxac[10] = accurrent;        
+        }
 	EthernetClient client = server.available();
 
 	if (client) {
@@ -234,11 +247,22 @@ void loop() {
 								name[i] = args[2].charAt(i);
 							}
 							int output = atoi(name);
-							output_toggle(output);
+							if (output_toggle(output)){
+laststate[10] = 100;
+} else {
+laststate[10] = 0;
+  
+}
 							client.println("status({");
-							for (int i = 22; i < 35; i++){
+if (laststate[10] > 0){
+								client.println("\"D33\": 1,");
+} else {
+								client.println("\"D33\": 0,");
+  
+}
+						/*	for (int i = 22; i < 35; i++){
 								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
-							}
+							} */
 							client.println("});");
 	
 						}					
@@ -271,9 +295,12 @@ void loop() {
 					client.println();
 					client.println("status({");
 
-					for (int i = 22; i <= 35; i++){
-						client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
-					}
+if (laststate[10] > 0){
+								client.println("\"D33\": 1,");
+} else {
+								client.println("\"D33\": 0,");
+  
+}
 
 			/*		for (int i = 0; i < 15; i++){
 						client.println("\"A" + String(i)+"\":"+String(analogRead(i))+",");
@@ -504,6 +531,5 @@ void refreshtoken() {
         };
      
 	tokens[currenttoken] = MakeChallenge();
-        debug("TOKENGEN",-1,String(currenttoken) + " - " + tokens[currenttoken]);
 }
 
