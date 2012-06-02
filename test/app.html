@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>
+        </title>
+        <link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.css" />
+        <link rel="stylesheet" href="my.css" />
+        <style>
+            /* App custom styles */
+        </style>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js">
+        </script>
+        <script src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.js">
+        </script>
+        <script src="http://www.webtoolkit.info/djs/webtoolkit.md5.js">
+</script>
+<script type="text/javascript">
+
+settings={};
+
+function getnewtoken(){/*
+var script = document.createElement('script');
+script.setAttribute('src','http://59.167.158.119/t');
+document.getElementsByTagName('head')[0].appendChild(script);
+*/
+$.getScript('http://59.167.158.119/t');
+};
+
+function token(response){
+tokenvalue  = response.token;
+};
+
+
+function startupconfig(){
+    var script = document.createElement('script');
+    script.setAttribute('src','http://59.167.158.119/config.js');
+    document.getElementsByTagName('head')[0].appendChild(script);
+}
+
+function status(){};
+
+function config(response){
+a = response;
+ for (var setting in response) { 
+
+    if (response[setting][0].type == "switch"){
+$('#togglelist').append("<div data-role=\"fieldcontain\"><fieldset data-role=\"controlgroup\"><label for=\"" +setting + "\">"+ response[setting][0].description +"</label><select name=\"" +setting + "\" class=\"switch\" id=\"" +setting + "\" data-theme=\"\" data-role=\"slider\"><option value=\"off\">Off</option><option value=\"on\">On</option></select></fieldset></div>").trigger("create");
+}
+
+$(function(){
+$( ".switch" ).change(function() {
+  var hash = MD5(tokenvalue + psk.value + "output" + $(this)[0].id.replace("D","") ); 
+
+var script = document.createElement('script');
+script.setAttribute('src','http://59.167.158.119/t/' + hash + $(this)[0].id.replace("D","/output/"));
+document.getElementsByTagName('head')[0].appendChild(script);
+    getnewtoken();
+
+});
+
+
+});
+
+
+ }
+}
+
+var tokenvalue = "";
+getnewtoken();
+startupconfig();
+
+
+
+        </script>
+    </head>
+    <body>
+        <div data-role="page" id="configpage">
+            <div data-theme="a" data-role="header">
+                <h3>
+                    16 Erin Cl
+                </h3>
+                <div data-role="navbar" data-iconpos="left">
+                    <ul>
+                        <li>
+                            <a href="#configpage" data-theme="" data-icon="gear" class="ui-btn-active">
+                                Config
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#Toggles" data-theme="" data-icon="">
+                                Toggles
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div data-role="content">
+                <div data-role="fieldcontain">
+                    <fieldset data-role="controlgroup">
+                        <label for="textinput1">
+                            Password
+                        </label>
+                        <input id="psk" placeholder="" value="insertPSKhere" type="password" />
+                    </fieldset>
+                </div>
+            </div>
+        </div>
+        <div data-role="page" id="Toggles">
+            <div data-theme="a" data-role="header">
+                <h3>
+                    16 Erin Cl
+                </h3>
+                <div data-role="navbar" data-iconpos="left">
+                    <ul>
+                        <li>
+                            <a href="#configpage" data-theme="" data-icon="gear" >
+                                Config
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#Toggles" data-theme="" data-icon="" class="ui-btn-active">
+                                Toggles
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div id="togglelist" data-role="content">
+
+<!--
+                <div data-role="fieldcontain">
+                    <fieldset data-role="controlgroup">
+                        <label for="toggleswitch2">
+                            Light 1
+                        </label>
+                        <select name="toggleswitch2" class="switch" id="toggleswitch2" data-theme="" data-role="slider">
+                            <option value="off">
+                                Off
+                            </option>
+                            <option value="on">
+                                On
+                            </option>
+                        </select>
+                    </fieldset>
+                </div>
+-->
+
+
+            </div>
+        </div>
+        <script>
+            //App custom javascript
+        </script>
+    </body>
+</html>

@@ -176,7 +176,7 @@ void loop() {
 					client.println("HTTP/1.1 200 OK");
 					client.println("Content-Type: text/html");
 					client.println();
-					client.println("<!DOCTYPE html><html><head><script src=\"http://www.webtoolkit.info/djs/webtoolkit.md5.js\"></script><script>var script = document.createElement('script');script.setAttribute('src','/t');document.getElementsByTagName('head')[0].appendChild(script);function token(response){document.getElementsByName('Token')[0].value = response.token;};</script></head><body><form action=\"\">Token: <input type=\"text\" name=\"Token\" /><br />PSK: <input type=\"text\" name=\"PSK\" value=\"insertPSKhere\" /><br />Action: <input type=\"text\" name=\"Action\" value=\"output\"/><br />Arg: <input type=\"text\" value=\"13\" name=\"Arg\" onkeyup=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value)\"/><br />Hash: <input type=\"text\" name=\"Hash\" /><input type=button value=\"Submit\" onClick=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value); window.location = \'t/\' + this.form.Hash.value +'/' + this.form.Action.value +'/'+ this.form.Arg.value ;\"></form></body></html>");
+				//	client.println("<!DOCTYPE html><html><head><script src=\"http://www.webtoolkit.info/djs/webtoolkit.md5.js\"></script><script>var script = document.createElement('script');script.setAttribute('src','/t');document.getElementsByTagName('head')[0].appendChild(script);function token(response){document.getElementsByName('Token')[0].value = response.token;};</script></head><body><form action=\"\">Token: <input type=\"text\" name=\"Token\" /><br />PSK: <input type=\"text\" name=\"PSK\" value=\"insertPSKhere\" /><br />Action: <input type=\"text\" name=\"Action\" value=\"output\"/><br />Arg: <input type=\"text\" value=\"13\" name=\"Arg\" onkeyup=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value)\"/><br />Hash: <input type=\"text\" name=\"Hash\" /><input type=button value=\"Submit\" onClick=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value); window.location = \'t/\' + this.form.Hash.value +'/' + this.form.Action.value +'/'+ this.form.Arg.value ;\"></form></body></html>");
 
 				} else if (strstr(clientline, "GET /t/") != 0) {
 					char *check;
@@ -255,6 +255,14 @@ void loop() {
 					client.println("token({\"token\": \"" + currenttoken + "\"});");
 
 					// print all the files, use a helper to keep it clean
+                                } else if (strstr(clientline, "GET /t?") != 0) {
+                              		client.println("HTTP/1.1 200 OK");
+					client.println("Content-Type: application/javascript");
+					client.println();
+				//	refreshtoken();
+					client.println("token({\"token\": \"" + currenttoken + "\"});");
+
+                                  
 				} else if (strstr(clientline, "GET /") != 0) {
 					// this time no space after the /, so a sub-file!
 					char *filename;
