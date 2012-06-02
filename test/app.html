@@ -46,8 +46,13 @@ for (var pin in response){
     b = pin;
 a =    document.getElementById(pin);
 if ( document.getElementById(pin)){
-document.getElementById(pin).selectedIndex = response[pin];
- $(document.getElementById(pin)).slider('refresh');
+    if (response[pin]){
+ $(document.getElementById(pin)).buttonMarkup({ theme: "c" });
+ $(document.getElementById(pin) + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("Off","On"));
+ } else{
+ $(document.getElementById(pin)).buttonMarkup({ theme: "a" });    
+ $(document.getElementById(pin)  + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("On","Off"));
+ }
 }
 }
 };
@@ -61,7 +66,10 @@ function config(response){
  for (var setting in response) { 
 
     if (response[setting][0].type == "switch"){
-$('#togglelist').append("<div data-role=\"fieldcontain\"><fieldset data-role=\"controlgroup\"><label for=\"" +setting + "\">"+ response[setting][0].description +"</label><select name=\"" +setting + "\" class=\"switch\" id=\"" +setting + "\" data-theme=\"\" data-role=\"slider\" ><option value=\"off\">Switched Off</option><option value=\"on\">Switched On</option></select></fieldset></div>").trigger("create");
+//$('#togglelist').append("<div data-role=\"fieldcontain\"><fieldset data-role=\"controlgroup\"><label for=\"" +setting + "\">"+ response[setting][0].description +"</label><select name=\"" +setting + "\" class=\"switch\" id=\"" +setting + "\" data-theme=\"\" data-role=\"slider\" ><option value=\"off\">Switched Off</option><option value=\"on\">Switched On</option></select></fieldset></div>").trigger("create");
+
+$('#togglelist').append("<a data-role=\"button\"  class=\"switch\" id=\"" +setting + "\"> "+ response[setting][0].description +" - On</a>").trigger("create");
+
 }
 
 
@@ -69,7 +77,7 @@ $('#togglelist').append("<div data-role=\"fieldcontain\"><fieldset data-role=\"c
 }
 
 $(function(){
-$( ".switch" ).change(function() {
+$( ".switch" ).click(function() {
   var hash = MD5(tokenvalue + document.getElementById("psk").value + "output" + $(this)[0].id.replace("D","") ); 
   $.ajax({
   url: 'http://59.167.158.119/t/' + hash + $(this)[0].id.replace("D","/output/"),
