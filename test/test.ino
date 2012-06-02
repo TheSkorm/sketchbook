@@ -56,19 +56,20 @@ void setup() {
 	refreshtoken();
 	refreshtoken();
 
-/* if (!sd.init(SPI_HALF_SPEED, chipSelect)) sd.initErrorHalt();  // Code to make the json config file
+ if (!sd.init(SPI_HALF_SPEED, chipSelect)) sd.initErrorHalt();  // Code to make the json config file
 sd.remove("config.js");
  if (!myFile.open("config.js", O_RDWR | O_CREAT | O_AT_END)) {
     sd.errorHalt("opening config.js for write failed");
  }
  myFile.println("config({");
  myFile.println("\"D33\" : [{\"description\": \"Lounge Room Light\", \"type\": \"switch\"}],");
+ myFile.println("\"D41\" : [{\"description\": \"Something Else\", \"type\": \"switch\"}],");
  myFile.println("\"D3\" : [{\"description\": \"Outside Temp\", \"type\": \"temp\"}],");
  myFile.println("\"A1\" : [{\"description\": \"Light Sensor\", \"type\": \"light\"}],");
  myFile.println("  });");
 
     myFile.close();
-*/
+
 }
 
 byte read_dht11_dat(int DHT11_PIN) {
@@ -248,9 +249,9 @@ maxac[10] = 0;
 							}
 							int output = atoi(name);
 							if (output_toggle(output)){
-laststate[10] = 100;
+  if(output == 33) laststate[10] = 100;
 } else {
-laststate[10] = 0;
+  if(output == 33) laststate[10] = 0;
   
 }
 							client.println("status({");
@@ -260,7 +261,9 @@ if (laststate[10] > 0){
 								client.println("\"D33\": 0,");
   
 }
-						/*	for (int i = 22; i < 35; i++){
+client.println("\"D41\": "+String(digitalRead(41))+",");
+
+						/*	for (int i = 22; i < 53; i++){
 								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
 							} */
 							client.println("});");
@@ -301,6 +304,7 @@ if (laststate[10] > 0){
 								client.println("\"D33\": 0,");
   
 }
+client.println("\"D41\": "+String(digitalRead(41))+",");
 
 			/*		for (int i = 0; i < 15; i++){
 						client.println("\"A" + String(i)+"\":"+String(analogRead(i))+",");
@@ -389,7 +393,8 @@ bool output_toggle(int OUTPUT_PIN) {
 void setup_pins() {
 	debug("OUTPUTS", -1, "STARTING");
 	pinMode(13, OUTPUT);
-	for (int i = 22; i < 35; i++){
+	pinMode(4, OUTPUT);
+	for (int i = 22; i < 53; i++){
 		pinMode(i, OUTPUT);	}
 	debug("OUTPUTS", -1, "STARTED");
 }

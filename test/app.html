@@ -78,9 +78,10 @@ $('#togglelist').append("<a data-role=\"button\"  class=\"switch\" id=\"" +setti
 
 $(function(){
 $( ".switch" ).click(function() {
-  var hash = MD5(tokenvalue + document.getElementById("psk").value + "output" + $(this)[0].id.replace("D","") ); 
+    stamp = new Date().getTime();
+  var hash = MD5(tokenvalue + document.getElementById("psk").value + "output" + $(this)[0].id.replace("D","") + stamp ); 
   $.ajax({
-  url: 'http://59.167.158.119/t/' + hash + $(this)[0].id.replace("D","/output/"),
+  url: 'http://59.167.158.119/t/' + hash + $(this)[0].id.replace("D","/output/") + "/" + stamp,
   dataType: "script",
   cache: true,
 });
