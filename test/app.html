@@ -6,29 +6,21 @@
         <title>
         </title>
         <link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.css" />
-        <link rel="stylesheet" href="my.css" />
-        <style>
-            /* App custom styles */
-        </style>
+
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js">
         </script>
         <script src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.js">
         </script>
         <script src="http://www.webtoolkit.info/djs/webtoolkit.md5.js">
+
 </script>
+                <style>
+.ui-content .ui-controlgroup .ui-slider-switch { width: 19em ;} 
+        </style>
 <script type="text/javascript">
 
 settings={};
 
-function getnewtoken(){
-    time = new Date().getTime();
-      $.ajax({
-  url: 'http://59.167.158.119/t?_=' + time,
-  dataType: "script",
-  cache: true,
-});
-
-};
 
 function getstatus(){
   $.ajax({
@@ -36,8 +28,6 @@ function getstatus(){
   dataType: "script",
   cache: false,
 });
-getnewtoken();
-
 };
 
 function token(response){
@@ -71,7 +61,7 @@ function config(response){
  for (var setting in response) { 
 
     if (response[setting][0].type == "switch"){
-$('#togglelist').append("<div data-role=\"fieldcontain\"><fieldset data-role=\"controlgroup\"><label for=\"" +setting + "\">"+ response[setting][0].description +"</label><select name=\"" +setting + "\" class=\"switch\" id=\"" +setting + "\" data-theme=\"\" data-role=\"slider\"><option value=\"off\">Off</option><option value=\"on\">On</option></select></fieldset></div>").trigger("create");
+$('#togglelist').append("<div data-role=\"fieldcontain\"><fieldset data-role=\"controlgroup\"><label for=\"" +setting + "\">"+ response[setting][0].description +"</label><select name=\"" +setting + "\" class=\"switch\" id=\"" +setting + "\" data-theme=\"\" data-role=\"slider\" ><option value=\"off\">Switched Off</option><option value=\"on\">Switched On</option></select></fieldset></div>").trigger("create");
 }
 
 
@@ -86,7 +76,6 @@ $( ".switch" ).change(function() {
   dataType: "script",
   cache: true,
 });
-getnewtoken();
   
 
 });
@@ -103,10 +92,9 @@ $(document).ready(function() {
 });
 
 
-t=setInterval("refreshdata()",3000 + Math.floor((Math.random()*500)+1));
+t=setInterval("refreshdata()",1000 + Math.floor((Math.random()*100)+1));
 
 var tokenvalue = "";
-getnewtoken();
 startupconfig();
         </script>
     </head>

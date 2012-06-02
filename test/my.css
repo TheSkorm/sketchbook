@@ -1,6 +1,9 @@
 .text-align-center {
   text-align: center;
 }
+
 .text-align-right {
   text-align: right;
 }
+
+.ui-slider-switch { width: 9em ;} 
