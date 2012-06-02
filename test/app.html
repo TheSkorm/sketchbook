@@ -20,12 +20,24 @@
 
 settings={};
 
-function getnewtoken(){/*
-var script = document.createElement('script');
-script.setAttribute('src','http://59.167.158.119/t');
-document.getElementsByTagName('head')[0].appendChild(script);
-*/
-$.getScript('http://59.167.158.119/t');
+function getnewtoken(){
+    time = new Date().getTime();
+      $.ajax({
+  url: 'http://59.167.158.119/t?_=' + time,
+  dataType: "script",
+  cache: true,
+});
+
+};
+
+function getstatus(){
+  $.ajax({
+  url: 'http://59.167.158.119/status',
+  dataType: "script",
+  cache: false,
+});
+getnewtoken();
+
 };
 
 function token(response){
@@ -39,57 +51,80 @@ function startupconfig(){
     document.getElementsByTagName('head')[0].appendChild(script);
 }
 
-function status(){};
+function status(response){
+for (var pin in response){
+    b = pin;
+a =    document.getElementById(pin);
+if ( document.getElementById(pin)){
+document.getElementById(pin).selectedIndex = response[pin];
+ $(document.getElementById(pin)).slider('refresh');
+}
+}
+};
+
+function refreshdata (){
+getstatus();
+console.log("Refreshed");
+}
 
 function config(response){
-a = response;
  for (var setting in response) { 
 
     if (response[setting][0].type == "switch"){
 $('#togglelist').append("<div data-role=\"fieldcontain\"><fieldset data-role=\"controlgroup\"><label for=\"" +setting + "\">"+ response[setting][0].description +"</label><select name=\"" +setting + "\" class=\"switch\" id=\"" +setting + "\" data-theme=\"\" data-role=\"slider\"><option value=\"off\">Off</option><option value=\"on\">On</option></select></fieldset></div>").trigger("create");
 }
 
+
+
+}
+
 $(function(){
 $( ".switch" ).change(function() {
   var hash = MD5(tokenvalue + psk.value + "output" + $(this)[0].id.replace("D","") ); 
-
-var script = document.createElement('script');
-script.setAttribute('src','http://59.167.158.119/t/' + hash + $(this)[0].id.replace("D","/output/"));
-document.getElementsByTagName('head')[0].appendChild(script);
-    getnewtoken();
+  $.ajax({
+  url: 'http://59.167.158.119/t/' + hash + $(this)[0].id.replace("D","/output/"),
+  dataType: "script",
+  cache: true,
+});
+getnewtoken();
+  
 
 });
 
 
 });
 
-
- }
 }
+
+
+$(document).ready(function() {
+ refreshdata ();
+
+});
+
+
+t=setInterval("refreshdata()",3000 + Math.floor((Math.random()*500)+1));
 
 var tokenvalue = "";
 getnewtoken();
 startupconfig();
-
-
-
         </script>
     </head>
     <body>
         <div data-role="page" id="configpage">
-            <div data-theme="a" data-role="header">
+            <div data-theme="a" data-role="header" data-position="fixed">
                 <h3>
                     16 Erin Cl
                 </h3>
                 <div data-role="navbar" data-iconpos="left">
                     <ul>
                         <li>
-                            <a href="#configpage" data-theme="" data-icon="gear" class="ui-btn-active">
+                            <a href="#configpage"  data-transition="none" data-theme="" data-icon="gear" class="ui-btn-active ui-state-persist">
                                 Config
                             </a>
                         </li>
                         <li>
-                            <a href="#Toggles" data-theme="" data-icon="">
+                            <a href="#Toggles"  data-transition="none"  data-theme="" data-icon="">
                                 Toggles
                             </a>
                         </li>
@@ -108,19 +143,19 @@ startupconfig();
             </div>
         </div>
         <div data-role="page" id="Toggles">
-            <div data-theme="a" data-role="header">
+            <div data-theme="a" data-role="header" data-position="fixed">
                 <h3>
                     16 Erin Cl
                 </h3>
                 <div data-role="navbar" data-iconpos="left">
                     <ul>
                         <li>
-                            <a href="#configpage" data-theme="" data-icon="gear" >
+                            <a href="#configpage" data-transition="none"  data-theme="" data-icon="gear" >
                                 Config
                             </a>
                         </li>
                         <li>
-                            <a href="#Toggles" data-theme="" data-icon="" class="ui-btn-active">
+                            <a href="#Toggles" data-transition="none"  data-theme="" data-icon="" class="ui-btn-active ui-state-persist">
                                 Toggles
                             </a>
                         </li>
@@ -128,25 +163,6 @@ startupconfig();
                 </div>
             </div>
             <div id="togglelist" data-role="content">
-
-<!--
-                <div data-role="fieldcontain">
-                    <fieldset data-role="controlgroup">
-                        <label for="toggleswitch2">
-                            Light 1
-                        </label>
-                        <select name="toggleswitch2" class="switch" id="toggleswitch2" data-theme="" data-role="slider">
-                            <option value="off">
-                                Off
-                            </option>
-                            <option value="on">
-                                On
-                            </option>
-                        </select>
-                    </fieldset>
-                </div>
--->
-
 
             </div>
         </div>

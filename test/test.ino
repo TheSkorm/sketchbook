@@ -9,7 +9,13 @@
 #include <MD5.h>
 #include "WString.h"
 
+/************ENCRYPTION STUFF ************/
 String PSK = "insertPSKhere"; // TODO multi PSKs read off SD card or something
+String tokens[3];
+int currenttoken = 0;
+unsigned long lastkeychange = 0 ;
+
+
 
 /************ TEMP/HUMID STUFF ************/
 //#define DHT11_PIN 6      // ADC0
@@ -31,9 +37,10 @@ const int chipSelect = 4;
 
 /************ WEBSERVER STUFF ************/
 #define BUFSIZ 100
-String currenttoken;
+
 
 void setup() {
+        lastkeychange = millis() ;
 	Serial.begin(57600);
 	debug("SERIAL", -1, "STARTED");
 	randomSeed(analogRead(0)); //randommize the ardiuno generotor
@@ -42,6 +49,8 @@ void setup() {
 	setup_pins();
 	setup_sdcard();
 	setup_network();
+	refreshtoken();
+	refreshtoken();
 	refreshtoken();
 
 /* if (!sd.init(SPI_HALF_SPEED, chipSelect)) sd.initErrorHalt();  // Code to make the json config file
@@ -141,7 +150,11 @@ String templine;
 void loop() {
 	char clientline[BUFSIZ];
 	int index = 0;
-
+  unsigned long currentMillis = millis();
+        if ( currentMillis - lastkeychange > 10000 ){
+          lastkeychange = currentMillis;
+        refreshtoken();
+        }
 	EthernetClient client = server.available();
 
 	if (client) {
@@ -176,7 +189,7 @@ void loop() {
 					client.println("HTTP/1.1 200 OK");
 					client.println("Content-Type: text/html");
 					client.println();
-				//	client.println("<!DOCTYPE html><html><head><script src=\"http://www.webtoolkit.info/djs/webtoolkit.md5.js\"></script><script>var script = document.createElement('script');script.setAttribute('src','/t');document.getElementsByTagName('head')[0].appendChild(script);function token(response){document.getElementsByName('Token')[0].value = response.token;};</script></head><body><form action=\"\">Token: <input type=\"text\" name=\"Token\" /><br />PSK: <input type=\"text\" name=\"PSK\" value=\"insertPSKhere\" /><br />Action: <input type=\"text\" name=\"Action\" value=\"output\"/><br />Arg: <input type=\"text\" value=\"13\" name=\"Arg\" onkeyup=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value)\"/><br />Hash: <input type=\"text\" name=\"Hash\" /><input type=button value=\"Submit\" onClick=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value); window.location = \'t/\' + this.form.Hash.value +'/' + this.form.Action.value +'/'+ this.form.Arg.value ;\"></form></body></html>");
+					client.println("<!DOCTYPE html><html><head><script src=\"http://www.webtoolkit.info/djs/webtoolkit.md5.js\"></script><script>var script = document.createElement('script');script.setAttribute('src','/t');document.getElementsByTagName('head')[0].appendChild(script);function token(response){document.getElementsByName('Token')[0].value = response.token;};</script></head><body><form action=\"\">Token: <input type=\"text\" name=\"Token\" /><br />PSK: <input type=\"text\" name=\"PSK\" value=\"insertPSKhere\" /><br />Action: <input type=\"text\" name=\"Action\" value=\"output\"/><br />Arg: <input type=\"text\" value=\"13\" name=\"Arg\" onkeyup=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value)\"/><br />Hash: <input type=\"text\" name=\"Hash\" /><input type=button value=\"Submit\" onClick=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value); window.location = \'t/\' + this.form.Hash.value +'/' + this.form.Action.value +'/'+ this.form.Arg.value ;\"></form></body></html>");
 
 				} else if (strstr(clientline, "GET /t/") != 0) {
 					char *check;
@@ -195,13 +208,21 @@ void loop() {
 						upto++;
 					}
 
-					debug("TOKEN2", -1,
-							currenttoken + PSK + args[1] + args[2] + args[3]
-									+ args[4] + args[5] + args[6] + args[7]);
-					if (MakeHash(
-							currenttoken + PSK + args[1] + args[2] + args[3]
+
+					if ((MakeHash(
+							tokens[0] + PSK + args[1] + args[2] + args[3]
 									+ args[4] + args[5] + args[6] + args[7])
-							== args[0]) {
+							== args[0])||
+(MakeHash(
+							tokens[1] + PSK + args[1] + args[2] + args[3]
+									+ args[4] + args[5] + args[6] + args[7])
+							== args[0])||
+(MakeHash(
+							tokens[2] + PSK + args[1] + args[2] + args[3]
+									+ args[4] + args[5] + args[6] + args[7])
+							== args[0]))
+
+{
 						debug("TOKEN", -1, "Passed Auth");
 
 						if (args[1] == "output") {
@@ -218,24 +239,9 @@ void loop() {
 							for (int i = 22; i < 35; i++){
 								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
 							}
-							for (int i = 0; i < 15; i++){
-								client.println("\"A" + String(i)+"\":"+String(analogRead(i))+",");
-							}
 							client.println("});");
-						} else if (args[1] == "status") {
-							client.println("HTTP/1.1 200 OK");
-							client.println("Content-Type: application/javascript");
-							client.println();
-							client.println("status({");
-							for (int i = 22; i < 35; i++){
-								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
-							}
-							for (int i = 0; i < 15; i++){
-								client.println("\"A" + String(i)+"\":"+String(analogRead(i))+",");
-							}
-							client.println("});");
+	
 						}					
-						refreshtoken();
 					} else {
 						client.println("HTTP/1.1 403 Forbidden");
 						client.println("Content-Type: text/html");
@@ -243,7 +249,6 @@ void loop() {
 						delay(200);
 						client.println("403 - Failed Auth");
 						debug("TOKEN", -1, "Failed Auth");
-						refreshtoken();
 
 					}
 
@@ -251,18 +256,33 @@ void loop() {
 					client.println("HTTP/1.1 200 OK");
 					client.println("Content-Type: application/javascript");
 					client.println();
-				//	refreshtoken();
-					client.println("token({\"token\": \"" + currenttoken + "\"});");
+					client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
 
 					// print all the files, use a helper to keep it clean
                                 } else if (strstr(clientline, "GET /t?") != 0) {
                               		client.println("HTTP/1.1 200 OK");
 					client.println("Content-Type: application/javascript");
 					client.println();
-				//	refreshtoken();
-					client.println("token({\"token\": \"" + currenttoken + "\"});");
+					client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
 
+ 				} else if (strstr(clientline, "GET /status") != 0) {
+					client.println("HTTP/1.1 200 OK");
+					client.println("Content-Type: application/javascript");
+					client.println();
+					client.println("status({");
+
+					for (int i = 22; i <= 35; i++){
+						client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
+					}
+
+			/*		for (int i = 0; i < 15; i++){
+						client.println("\"A" + String(i)+"\":"+String(analogRead(i))+",");
+					} */
+
+				        client.println("});");
+					client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
                                   
+                                                                   
 				} else if (strstr(clientline, "GET /") != 0) {
 					// this time no space after the /, so a sub-file!
 					char *filename;
@@ -316,8 +336,8 @@ void debug(String component, int subcomponent, String message) {
 		Serial.print(subcomponent);
 		Serial.print(" - ");
 		Serial.println(message);
-	//	Serial.print("MEM/0 - Free:");
-	//	Serial.println(freeMemory());
+		Serial.print("MEM/0 - Free:");
+		Serial.println(freeMemory());
 	} 
 }
 
@@ -478,6 +498,12 @@ String MakeHash(String test) {
 }
 
 void refreshtoken() {
-	currenttoken = MakeChallenge();
+        currenttoken++;
+        if (currenttoken > 2){
+          currenttoken = 0;
+        };
+     
+	tokens[currenttoken] = MakeChallenge();
+        debug("TOKENGEN",-1,String(currenttoken) + " - " + tokens[currenttoken]);
 }
 
