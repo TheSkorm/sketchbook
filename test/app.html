@@ -48,10 +48,10 @@ a =    document.getElementById(pin);
 if ( document.getElementById(pin)){
     if (response[pin]){
  $(document.getElementById(pin)).buttonMarkup({ theme: "c" });
- $(document.getElementById(pin) + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("Off","On"));
+ $("#" + pin + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("Off","On"));
  } else{
  $(document.getElementById(pin)).buttonMarkup({ theme: "a" });    
- $(document.getElementById(pin)  + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("On","Off"));
+ $("#" + pin + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("On","Off"));
  }
 }
 }
