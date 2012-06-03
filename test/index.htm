@@ -116,8 +116,8 @@ $( ".switch" ).click(function() {
 
 
 $(document).ready(function() {
+ document.getElementById('psk').value = localStorage.getItem('psk');
  refreshdata ();
-
 });
 
 
@@ -159,7 +159,7 @@ startupconfig();
                         <label for="textinput1">
                             Password
                         </label>
-                        <input id="psk" placeholder="" value="insertPSKhere" type="password" />
+                        <input id="psk" placeholder="" value="" type="password" onkeyup="localStorage.setItem('psk',document.getElementById('psk').value);"/>
                     </fieldset>
                 </div>
             </div>
