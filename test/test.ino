@@ -20,10 +20,20 @@ unsigned long lastaccheck = 0 ;
 int maxac[15];
 int laststate[15];
 
+
 /************ TEMP/HUMID STUFF ************/
 //#define DHT11_PIN 6      // ADC0
 // How big our line buffer should be. 100 is plenty!
 unsigned long nexttemp;
+#include "DHT.h"
+#define DHTTYPE DHT11
+DHT dhtin(47, DHTTYPE);
+DHT dhtout(46, DHTTYPE);
+float hin = 0;
+  float tin = 0;
+  float hout = 0;
+  float tout = 0;
+  
 
 /************ ETHERNET STUFF ************/
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -47,8 +57,8 @@ void setup() {
 	Serial.begin(57600);
 	debug("SERIAL", -1, "STARTED");
 	randomSeed(analogRead(0)); //randommize the ardiuno generotor
-	setup_temp(6);
-	setup_temp(7);
+	setup_temp(8);
+	setup_temp(14);
 	setup_pins();
 	setup_sdcard();
 	setup_network();
@@ -64,90 +74,15 @@ sd.remove("config.js");
  myFile.println("config({");
  myFile.println("\"D33\" : [{\"description\": \"Lounge Room Light\", \"type\": \"switch\",\"read\": \"A10\"}],");
  myFile.println("\"D41\" : [{\"description\": \"Something Else\", \"type\": \"switch\",\"read\": \"D41\"}],");
- myFile.println("\"D3\" : [{\"description\": \"Outside Temp\", \"type\": \"temp\"}],");
+ myFile.println("\"T0\" : [{\"description\": \"Outside Temp\", \"type\": \"temp\"}],");
+ myFile.println("\"T1\" : [{\"description\": \"Inside Temp\", \"type\": \"temp\"}],");
+ myFile.println("\"H0\" : [{\"description\": \"Outside Humid\", \"type\": \"humid\"}],");
+ myFile.println("\"H1\" : [{\"description\": \"Inside Humid\", \"type\": \"humid\"}],");
  myFile.println("\"A1\" : [{\"description\": \"Light Sensor\", \"type\": \"light\"}],");
  myFile.println("  });");
 
     myFile.close();
 
-}
-
-byte read_dht11_dat(int DHT11_PIN) {
-	byte i = 0;
-	byte result = 0;
-	for (i = 0; i < 8; i++) {
-
-		while (!(PINF & _BV(DHT11_PIN)))
-			; // wait for 50us
-		delayMicroseconds(30);
-
-		if (PINF & _BV(DHT11_PIN))
-			result |= (1 << (7 - i));
-		unsigned long deadtimer = millis() + 500; //max wait is 100ms
-		while ((PINF & _BV(DHT11_PIN)) && millis() < deadtimer)
-			; // wait '1' finish
-
-	}
-	return result;
-}
-
-dhtawesome CheckTemp(int DHT11_PIN) {
-	dhtawesome current;
-	current.humid = 0;
-	current.humid_point = 0;
-	current.temp = 0;
-	current.temp_point = 0;
-
-	DDRF |= _BV(DHT11_PIN);
-	PORTF |= _BV(DHT11_PIN);
-	byte dht11_dat[5];
-	byte dht11_in;
-	byte i;
-	// start condition
-	// 1. pull-down i/o pin from 18ms
-	PORTF &= ~_BV(DHT11_PIN);
-	delay(18);
-	PORTF |= _BV(DHT11_PIN);
-	delayMicroseconds(40);
-
-	DDRF &= ~_BV(DHT11_PIN);
-	delayMicroseconds(40);
-
-	dht11_in = PINF & _BV(DHT11_PIN);
-
-	if (dht11_in) {
-		debug("TEMP", DHT11_PIN, "dht11 start condition 1 not met");
-		return (current);
-	}
-	delayMicroseconds(80);
-
-	dht11_in = PINF & _BV(DHT11_PIN);
-
-	if (!dht11_in) {
-		debug("TEMP", DHT11_PIN, "dht11 start condition 2 not met");
-		return (current);
-	}
-	delayMicroseconds(80);
-	// now ready for data reception
-	for (i = 0; i < 5; i++) {
-		dht11_dat[i] = read_dht11_dat(DHT11_PIN);
-	}
-
-	DDRF |= _BV(DHT11_PIN);
-	PORTF |= _BV(DHT11_PIN);
-
-	byte dht11_check_sum = dht11_dat[0] + dht11_dat[1] + dht11_dat[2]
-			+ dht11_dat[3];
-	// check check_sum
-	if (dht11_dat[4] != dht11_check_sum) {
-		debug("TEMP", DHT11_PIN, "DHT11 checksum error");
-	} else {
-		current.humid = int(dht11_dat[0]);
-		current.humid_point = int(dht11_dat[1]);
-		current.temp = int(dht11_dat[2]);
-		current.temp_point = int(dht11_dat[3]);
-	}
-	return (current);
 }
 
 String templine;
@@ -158,7 +93,13 @@ void loop() {
         if ( currentMillis - lastkeychange > 10000 ){
           lastkeychange = currentMillis;
         refreshtoken();
+
+hin = dhtin.readHumidity();
+tin = dhtin.readTemperature();
+hout = dhtout.readHumidity();
+tout = dhtout.readTemperature();
         }
+        
         
         if ( currentMillis - lastaccheck > 500 ){
           lastaccheck = currentMillis;
@@ -261,23 +202,14 @@ maxac[i] = 0;
 						debug("TOKEN", -1, "Passed Auth");
 
 						if (args[1] == "output") {
-							client.println("HTTP/1.1 200 OK");
-							client.println("Content-Type: application/javascript");	
-							client.println();
-							char name[args[2].length()];
-							for (int i = 0; i < args[2].length(); i++) {
-								name[i] = args[2].charAt(i);
-							}
-							int output = atoi(name);
-		                                        output_toggle(output);
-							client.println("status({");
-							for (int i = 22; i < 53; i++){
-								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
-							} 
-                                                        for (int i = 0; i < 15; i++){
-								client.println("\"A" + String(i)+"\":"+String(laststate[i])+",");
-							} 
-							client.println("});");
+								char name[args[2].length()];
+								for (int i = 0; i < args[2].length(); i++) {
+									name[i] = args[2].charAt(i);
+								}
+								int output = atoi(name);
+			                                        output_toggle(output);
+  sendstatus(client);
+
 	
 						}					
 					} else {
@@ -304,19 +236,7 @@ maxac[i] = 0;
 					client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
 
  				} else if (strstr(clientline, "GET /status") != 0) {
-					client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: application/javascript");
-					client.println();
-							client.println("status({");
-							for (int i = 22; i < 53; i++){
-								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
-							} 
-                                                        for (int i = 0; i < 15; i++){
-								client.println("\"A" + String(i)+"\":"+String(laststate[i])+",");
-							} 
-							client.println("});");
-					client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
-                                  
+sendstatus(client);
                                                                    
 				} else if (strstr(clientline, "GET /") != 0) {
 					// this time no space after the /, so a sub-file!
@@ -379,7 +299,10 @@ void debug(String component, int subcomponent, String message) {
 void setup_temp(int DHT11_PIN) {
 	debug("TEMP", DHT11_PIN, "STARTING");
 	nexttemp = millis() + 2000;
+  dhtin.begin();
+  dhtout.begin();
 	debug("TEMP", DHT11_PIN, "STARTED");
+
 }
 
 bool output_toggle(int OUTPUT_PIN) {
@@ -398,7 +321,7 @@ void setup_pins() {
 	debug("OUTPUTS", -1, "STARTING");
 	pinMode(13, OUTPUT);
 	pinMode(4, OUTPUT);
-	for (int i = 22; i < 53; i++){
+	for (int i = 22; i < 42; i++){
 		pinMode(i, OUTPUT);	}
 	debug("OUTPUTS", -1, "STARTED");
 }
@@ -542,3 +465,26 @@ void refreshtoken() {
 	tokens[currenttoken] = MakeChallenge();
 }
 
+void sendstatus(EthernetClient client){
+  					client.println("HTTP/1.1 200 OK");
+					client.println("Content-Type: application/javascript");
+					client.println();
+							client.println("status({");
+							for (int i = 22; i < 42; i++){
+								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
+							} 
+                                                        for (int i = 0; i < 15; i++){
+								client.println("\"A" + String(i)+"\":"+String(laststate[i])+",");
+							} 
+								client.print("\"T0\":");
+                                                                client.print(tin);
+								client.print(",\n\"T1\":");
+                                                                client.print(tout);
+								client.print(",\n\"H0\":");
+                                                                client.print(hin);
+								client.print(",\n\"H1\":");
+                                                                client.print(hout);
+							client.println("});");
+					client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
+                                  
+}
