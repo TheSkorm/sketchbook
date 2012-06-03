@@ -28,7 +28,7 @@ unsigned long nexttemp;
 #include "DHT.h"
 #define DHTTYPE DHT11
 DHT dhtin(47, DHTTYPE);
-DHT dhtout(46, DHTTYPE);
+DHT dhtout(45, DHTTYPE);
 float hin = 0;
   float tin = 0;
   float hout = 0;
@@ -57,8 +57,7 @@ void setup() {
 	Serial.begin(57600);
 	debug("SERIAL", -1, "STARTED");
 	randomSeed(analogRead(0)); //randommize the ardiuno generotor
-	setup_temp(8);
-	setup_temp(14);
+
 	setup_pins();
 	setup_sdcard();
 	setup_network();
