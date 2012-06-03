@@ -11,7 +11,7 @@
 
 /************ENCRYPTION STUFF ************/
 String PSK = "insertPSKhere"; // TODO multi PSKs read off SD card or something
-String tokens[3];
+String tokens[2];
 int currenttoken = 0;
 unsigned long lastkeychange = 0 ;
 
@@ -62,7 +62,6 @@ void setup() {
 	setup_pins();
 	setup_sdcard();
 	setup_network();
-	refreshtoken();
 	refreshtoken();
 	refreshtoken();
 
@@ -124,7 +123,7 @@ maxac[i] = 0;
 
 		// reset the input buffer
 		index = 0;
-               unsigned long maxtime = millis() + 1000;
+               unsigned long maxtime = millis() + 5000;
 		while (client.connected()) {
                         if (maxtime < millis()) break;
 			if (client.available()) {
@@ -191,10 +190,6 @@ maxac[i] = 0;
 							== args[0])||
 (MakeHash(
 							tokens[1] + PSK + args[1] + args[2] + args[3]
-									+ args[4] + args[5] + args[6] + args[7])
-							== args[0])||
-(MakeHash(
-							tokens[2] + PSK + args[1] + args[2] + args[3]
 									+ args[4] + args[5] + args[6] + args[7])
 							== args[0]))
 
@@ -458,7 +453,7 @@ String MakeHash(String test) {
 
 void refreshtoken() {
         currenttoken++;
-        if (currenttoken > 2){
+        if (currenttoken > 1){
           currenttoken = 0;
         };
      
@@ -482,7 +477,7 @@ void sendstatus(EthernetClient client){
                                                                 client.print(tout);
 								client.print(",\n\"H0\":");
                                                                 client.print(hin);
-								client.print(",\n\"H1\":");
+	       						client.print(",\n\"H1\":");
                                                                 client.print(hout);
 							client.println("});");
 					client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");

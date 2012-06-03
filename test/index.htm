@@ -36,9 +36,12 @@ function startupconfig(){
     document.getElementsByTagName('head')[0].appendChild(script);
 }
 
-function status(response){
+function status(response){ 
 for (var pin in response){
+
+
 if ( document.getElementById(pin)){
+ if (settings[pin][0].type == "switch"){
     if (response[settings[pin][0].read]){
  $(document.getElementById(pin)).buttonMarkup({ theme: "c" });
  $("#" + pin + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("Off","On"));
@@ -49,7 +52,17 @@ if ( document.getElementById(pin)){
  $("#" + pin + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("On","Off"));
   $(document.getElementById(pin))[0].className = "switch ui-btn-hover-a ui-btn ui-btn-up-a ui-shadow ui-btn-corner-all";
  }
+} else if (settings[pin][0].type == "temp"){
+$(document.getElementById(pin))[0].value = response[pin];
+$(document.getElementById(pin)).slider("refresh")
+} else if (settings[pin][0].type == "humid"){
+$(document.getElementById(pin))[0].value = response[pin];
+$(document.getElementById(pin)).slider("refresh")
 }
+
+}
+
+
 }
 };
 
@@ -66,7 +79,18 @@ function config(response){
 
 $('#togglelist').append("<a data-role=\"button\"  class=\"switch\" id=\"" +setting + "\"> "+ response[setting][0].description +" - On</a>").trigger("create");
 
+} else if (response[setting][0].type == "temp"){
+
+//$('#togglelist').append("<a data-role=\"button\"  class=\"switch\" id=\"" +setting + "\"> "+ response[setting][0].description +" - On</a>").trigger("create");
+$('#envmonitors').append("<label for=\"slider-fill\">"+ response[setting][0].description +"</label><br><input type=\"range\" name=\"slider\" id=\"" + setting +"\" value=\"0\" min=\"0\" max=\"50\" data-highlight=\"true\" disabled=\"true\" /><br>").trigger("create");
+
+} else if (response[setting][0].type == "humid"){
+
+$('#envmonitors').append("<label for=\"slider-fill\">"+ response[setting][0].description +"</label><br><input type=\"range\" name=\"slider\" id=\"" + setting +"\" value=\"0\" min=\"0\" max=\"100\" data-highlight=\"true\" disabled=\"true\" /><br>").trigger("create");
+
 }
+
+
 
 settings=response;
 
@@ -97,7 +121,7 @@ $(document).ready(function() {
 });
 
 
-t=setInterval("refreshdata()",2000 + Math.floor((Math.random()*100)+1));
+t=setInterval("refreshdata()",3000 + Math.floor((Math.random()*100)+1));
 
 var tokenvalue = "";
 startupconfig();
@@ -119,6 +143,11 @@ startupconfig();
                         <li>
                             <a href="#Toggles"  data-transition="none"  data-theme="" data-icon="">
                                 Toggles
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#env"  data-transition="none"  data-theme="" data-icon="">
+                                Environmental
                             </a>
                         </li>
                     </ul>
@@ -152,11 +181,51 @@ startupconfig();
                                 Toggles
                             </a>
                         </li>
+                        <li>
+                            <a href="#env"  data-transition="none"  data-theme="" data-icon="">
+                                Environmental
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
             <div id="togglelist" data-role="content">
 
+            </div>
+        </div>
+        <div data-role="page" id="env">
+            <div data-theme="a" data-role="header" data-position="fixed">
+                <h3>
+                    16 Erin Cl
+                </h3>
+                <div data-role="navbar" data-iconpos="left">
+                    <ul>
+                        <li>
+                            <a href="#configpage" data-transition="none"  data-theme="" data-icon="gear" >
+                                Config
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#Toggles" data-transition="none"  data-theme="" data-icon="" >
+                                Toggles
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#env"  data-transition="none"  data-theme="" data-icon="" class="ui-btn-active ui-state-persist">
+                                Environmental
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div id="envmonitors" data-role="content">
+<!-- <label for="slider-fill">Temp Inside:</label><br><input type="range" name="slider" id="T0" value="0" min="0" max="50" data-highlight="true" disabled="true" /><br>
+<label for="slider-fill">Humidity Inside:</label><br>
+<input type="range" name="slider" id="H0" value="0" min="0" max="100" data-highlight="true" disabled="true" /><br>
+<label for="slider-fill">Temp Outside:</label><br>
+<input type="range" name="slider" id="T1" value="0" min="0" max="50" data-highlight="true" disabled="true" /><br>
+<label for="slider-fill">Humidity Outside:</label><br>
+<input type="range" name="slider" id="H1" value="0" min="0" max="100" data-highlight="true" disabled="true" /> <br> -->
             </div>
         </div>
         <script>
