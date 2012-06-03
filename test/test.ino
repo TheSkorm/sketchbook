@@ -62,8 +62,8 @@ sd.remove("config.js");
     sd.errorHalt("opening config.js for write failed");
  }
  myFile.println("config({");
- myFile.println("\"D33\" : [{\"description\": \"Lounge Room Light\", \"type\": \"switch\"}],");
- myFile.println("\"D41\" : [{\"description\": \"Something Else\", \"type\": \"switch\"}],");
+ myFile.println("\"D33\" : [{\"description\": \"Lounge Room Light\", \"type\": \"switch\",\"read\": \"A10\"}],");
+ myFile.println("\"D41\" : [{\"description\": \"Something Else\", \"type\": \"switch\",\"read\": \"D41\"}],");
  myFile.println("\"D3\" : [{\"description\": \"Outside Temp\", \"type\": \"temp\"}],");
  myFile.println("\"A1\" : [{\"description\": \"Light Sensor\", \"type\": \"light\"}],");
  myFile.println("  });");
@@ -162,13 +162,19 @@ void loop() {
         
         if ( currentMillis - lastaccheck > 500 ){
           lastaccheck = currentMillis;
-laststate[10] = maxac[10];
-maxac[10] = 0;        
+          for (int i =0; i<15; i++){
+laststate[i] = maxac[i];
+maxac[i] = 0;   
+       }
+
 }
-        int accurrent = analogRead(10);
-        if (accurrent > maxac[10]){
-           maxac[10] = accurrent;        
+          for (int i =0; i<15; i++){
+                    int accurrent = analogRead(i);
+        if (accurrent > maxac[i]){
+           maxac[i] = accurrent;        
         }
+          }
+
 	EthernetClient client = server.available();
 
 	if (client) {
@@ -248,24 +254,14 @@ maxac[10] = 0;
 								name[i] = args[2].charAt(i);
 							}
 							int output = atoi(name);
-							if (output_toggle(output)){
-  if(output == 33) laststate[10] = 100;
-} else {
-  if(output == 33) laststate[10] = 0;
-  
-}
+		                                        output_toggle(output);
 							client.println("status({");
-if (laststate[10] > 0){
-								client.println("\"D33\": 1,");
-} else {
-								client.println("\"D33\": 0,");
-  
-}
-client.println("\"D41\": "+String(digitalRead(41))+",");
-
-						/*	for (int i = 22; i < 53; i++){
+							for (int i = 22; i < 53; i++){
 								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
-							} */
+							} 
+                                                        for (int i = 0; i < 15; i++){
+								client.println("\"A" + String(i)+"\":"+String(laststate[i])+",");
+							} 
 							client.println("});");
 	
 						}					
@@ -296,21 +292,14 @@ client.println("\"D41\": "+String(digitalRead(41))+",");
 					client.println("HTTP/1.1 200 OK");
 					client.println("Content-Type: application/javascript");
 					client.println();
-					client.println("status({");
-
-if (laststate[10] > 0){
-								client.println("\"D33\": 1,");
-} else {
-								client.println("\"D33\": 0,");
-  
-}
-client.println("\"D41\": "+String(digitalRead(41))+",");
-
-			/*		for (int i = 0; i < 15; i++){
-						client.println("\"A" + String(i)+"\":"+String(analogRead(i))+",");
-					} */
-
-				        client.println("});");
+							client.println("status({");
+							for (int i = 22; i < 53; i++){
+								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
+							} 
+                                                        for (int i = 0; i < 15; i++){
+								client.println("\"A" + String(i)+"\":"+String(laststate[i])+",");
+							} 
+							client.println("});");
 					client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
                                   
                                                                    
