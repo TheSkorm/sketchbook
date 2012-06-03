@@ -39,7 +39,7 @@ SdFile myFile;
 const int chipSelect = 4;
 
 /************ WEBSERVER STUFF ************/
-#define BUFSIZ 100
+#define BUFSIZ 1000
 
 
 void setup() {
@@ -183,8 +183,9 @@ maxac[i] = 0;
 
 		// reset the input buffer
 		index = 0;
-
+               unsigned long maxtime = millis() + 1000;
 		while (client.connected()) {
+                        if (maxtime < millis()) break;
 			if (client.available()) {
 				char c = client.read();
 
@@ -209,7 +210,21 @@ maxac[i] = 0;
 					client.println("HTTP/1.1 200 OK");
 					client.println("Content-Type: text/html");
 					client.println();
-					client.println("<!DOCTYPE html><html><head><script src=\"http://www.webtoolkit.info/djs/webtoolkit.md5.js\"></script><script>var script = document.createElement('script');script.setAttribute('src','/t');document.getElementsByTagName('head')[0].appendChild(script);function token(response){document.getElementsByName('Token')[0].value = response.token;};</script></head><body><form action=\"\">Token: <input type=\"text\" name=\"Token\" /><br />PSK: <input type=\"text\" name=\"PSK\" value=\"insertPSKhere\" /><br />Action: <input type=\"text\" name=\"Action\" value=\"output\"/><br />Arg: <input type=\"text\" value=\"13\" name=\"Arg\" onkeyup=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value)\"/><br />Hash: <input type=\"text\" name=\"Hash\" /><input type=button value=\"Submit\" onClick=\"this.form.Hash.value = MD5(this.form.Token.value + this.form.PSK.value+ this.form.Action.value + this.form.Arg.value); window.location = \'t/\' + this.form.Hash.value +'/' + this.form.Action.value +'/'+ this.form.Arg.value ;\"></form></body></html>");
+					if (!file.open(&root, "INDEX.HTM", O_READ)) {
+			                     client.println("Failed to read SD card");
+					}
+
+					int16_t c;
+                                        
+					while ((c = file.read()) > 0) {
+						// uncomment the serial to debug (slow!)
+						//Serial.print((char)c);
+                                                client.print((char) c);				
+ 
+                                          }
+					file.close();
+
+
 
 				} else if (strstr(clientline, "GET /t/") != 0) {
 					char *check;
@@ -313,15 +328,15 @@ maxac[i] = 0;
 					(strstr(clientline, " HTTP"))[0] = 0;
 
 					if (!file.open(&root, filename, O_READ)) {
-						client.println("HTTP/1.1 404 Not Found");
-						client.println("Content-Type: text/html");
-						client.println();
-						client.println("<h2>File Not Found!</h2>");
+					client.println("HTTP/1.1 200 OK");
+					client.println("Content-Type: text/html");
+					client.println();
+					ListFiles(client, LS_SIZE);
 						break;
 					}
 
 					client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: text/plain");
+					client.println("Content-Type: text/html");
 					client.println();
 
 					int16_t c;
@@ -333,10 +348,10 @@ maxac[i] = 0;
 					file.close();
 				} else {
 					// everything else is a 404
-					client.println("HTTP/1.1 404 Not Found");
+					client.println("HTTP/1.1 200 OK");
 					client.println("Content-Type: text/html");
 					client.println();
-					client.println("<h2>File Not Found!</h2>");
+					ListFiles(client, LS_SIZE);
 				}
 				break;
 			}
