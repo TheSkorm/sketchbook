@@ -5,13 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>
         </title>
-        <link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.css" />
+        <link rel="stylesheet" href="jquery.mobile-1.1.0.min.css" />
 
-        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js">
+        <script src="jquery.min.js">
         </script>
-        <script src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.js">
+        <script src="jquery.mobile-1.1.0.min.js">
         </script>
-        <script src="http://www.webtoolkit.info/djs/webtoolkit.md5.js">
+        <script src="webtoolkit.md5.js">
 
 </script>
                 <style>
@@ -47,9 +47,12 @@ if ( document.getElementById(pin)){
     if (response[settings[pin][0].read]){
  $(document.getElementById(pin)).buttonMarkup({ theme: "c" });
  $("#" + pin + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("Off","On"));
+  $(document.getElementById(pin))[0].className = "switch ui-btn-hover-c ui-btn ui-btn-up-c ui-shadow ui-btn-corner-all";
+
  } else{
  $(document.getElementById(pin)).buttonMarkup({ theme: "a" });    
  $("#" + pin + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("On","Off"));
+  $(document.getElementById(pin))[0].className = "switch ui-btn-hover-a ui-btn ui-btn-up-a ui-shadow ui-btn-corner-all";
  }
 }
 }
