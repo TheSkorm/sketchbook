@@ -82,11 +82,11 @@ $('#togglelist').append("<a data-role=\"button\"  class=\"switch\" id=\"" +setti
 } else if (response[setting][0].type == "temp"){
 
 //$('#togglelist').append("<a data-role=\"button\"  class=\"switch\" id=\"" +setting + "\"> "+ response[setting][0].description +" - On</a>").trigger("create");
-$('#envmonitors').append("<label for=\"slider-fill\">"+ response[setting][0].description +"</label><br><input type=\"range\" name=\"slider\" id=\"" + setting +"\" value=\"0\" min=\"0\" max=\"50\" data-highlight=\"true\" disabled=\"true\" /><br>").trigger("create");
+$('#envmonitors').append("<label for=\"slider-fill\">"+ response[setting][0].description +"</label><br><input type=\"number\" data-type=\"range\" name=\"slider\" id=\"" + setting +"\" value=\"0\" min=\"0\" max=\"50\" data-highlight=\"true\" disabled=\"true\" /><br>").trigger("create");
 
 } else if (response[setting][0].type == "humid"){
 
-$('#envmonitors').append("<label for=\"slider-fill\">"+ response[setting][0].description +"</label><br><input type=\"range\" name=\"slider\" id=\"" + setting +"\" value=\"0\" min=\"0\" max=\"100\" data-highlight=\"true\" disabled=\"true\" /><br>").trigger("create");
+$('#envmonitors').append("<label for=\"slider-fill\">"+ response[setting][0].description +"</label><br><input type=\"number\" data-type=\"range\" name=\"slider\" id=\"" + setting +"\" value=\"0\" min=\"0\" max=\"100\" data-highlight=\"true\" disabled=\"true\" /><br>").trigger("create");
 
 }
 
@@ -117,14 +117,16 @@ $( ".switch" ).click(function() {
 
 $(document).ready(function() {
  document.getElementById('psk').value = localStorage.getItem('psk');
+ startupconfig();
+
  refreshdata ();
+
 });
 
 
 t=setInterval("refreshdata()",3000 + Math.floor((Math.random()*100)+1));
 
 var tokenvalue = "";
-startupconfig();
         </script>
     </head>
     <body>

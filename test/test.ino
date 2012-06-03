@@ -202,6 +202,25 @@ maxac[i] = 0;
 								}
 								int output = atoi(name);
 			                                        output_toggle(output);
+ delay(20);
+  unsigned long lastaccheck = millis();
+            for (int i =0; i<15; i++){
+maxac[i] = 0;   
+       }
+while(lastaccheck +100 > millis() ){
+          for (int i =0; i<15; i++){
+                    int accurrent = analogRead(i);
+        if (accurrent > maxac[i]){
+           maxac[i] = accurrent;        
+        }
+          }
+}
+          for (int i =0; i<15; i++){
+laststate[i] = maxac[i];
+Serial.println(laststate[i]);
+maxac[i] = 0;   
+       }
+
   sendstatus(client);
 
 	
