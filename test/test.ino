@@ -52,6 +52,17 @@ const int chipSelect = 4;
 #define BUFSIZ 1000
 
 
+/************ Scheduler STUFF ************/
+unsigned long actionmillis[20];  // time to perform action  TODO Turn this into struct
+bool action[20]; // 0/1 on/off
+bool active[20]; // 0/1 enabled
+int actionpin[20]; // 0-255 pin to turn on or off
+bool readpinad[20]; // 0/1 is the pin a or digital
+int readpin[20]; // 0-255 pin to read to check if on or off
+
+
+
+
 void setup() {
         lastkeychange = millis() ;
 	Serial.begin(57600);
@@ -81,6 +92,14 @@ sd.remove("config.js");
 
     myFile.close();
 
+/* Test code for scheduler
+actionmillis[1] = millis() + 1000;  // time to perform action
+action[1] = false; // 0/1 on/off
+active[1] = true; // 0/1 enabled
+actionpin[1] = 33; // 0-255 pin to turn on or off
+readpinad[1] = 0; // 0/1 is the pin a or digital
+readpin[1] = 10; // 0-255 pin to read to check if on or off
+*/
 }
 
 String templine;
@@ -105,6 +124,28 @@ tout = dhtout.readTemperature();
 laststate[i] = maxac[i];
 maxac[i] = 0;   
        }
+
+
+
+for (int i=0; i<=19; i++){ // this can be a funciotn - scheduler
+if (active[i]){
+if (currentMillis > actionmillis[i]) {
+Serial.println(action[0]); // 0/1 on/off
+ Serial.println(active[0]); // 0/1 enabled
+Serial.println(actionpin[0]); // 0-255 pin to turn on or off
+ Serial.println(readpinad[0]); // 0/1 is the pin a or digital
+ Serial.println(readpin[0]); // 0-255 pin to read to check if on or off
+
+   if (readpinad[i] == true){
+      if ((bool) digitalRead(readpin[i]) != (bool) action[i])  output_toggle(actionpin[i]);
+   } else {
+   	  if ((bool) laststate[readpin[i]] != (bool) action[i])  output_toggle(actionpin[i]);
+   }
+active[i] = false;
+}   
+}  
+}
+
 
 }
           for (int i =0; i<15; i++){
@@ -169,14 +210,12 @@ maxac[i] = 0;
 					char *check;
 					String args[8] = "";
 					int upto = 0;
-					check = clientline + 7;
+					check = clientline + 7; //incorrect sive causes issues TODO fix - security hole or some shit
 					(strstr(clientline, " HTTP"))[0] = 0;
 					char * pnt;
 					char dem[] = "/";
 					pnt = strtok(check, dem);
 					while (pnt != NULL && upto < 8) {
-
-						debug("TOKEN", -1, pnt);
 						args[upto] = pnt;
 						pnt = strtok(NULL, dem);
 						upto++;
@@ -196,11 +235,12 @@ maxac[i] = 0;
 						debug("TOKEN", -1, "Passed Auth");
 
 						if (args[1] == "output") {
-								char name[args[2].length()];
+								char name[args[2].length()+1];
 								for (int i = 0; i < args[2].length(); i++) {
 									name[i] = args[2].charAt(i);
 								}
 								int output = atoi(name);
+
 			                                        output_toggle(output);
  delay(20);
   unsigned long lastaccheck = millis();
@@ -217,14 +257,76 @@ while(lastaccheck +100 > millis() ){
 }
           for (int i =0; i<15; i++){
 laststate[i] = maxac[i];
-Serial.println(laststate[i]);
 maxac[i] = 0;   
        }
 
   sendstatus(client);
 
 	
-						}					
+						}	else if (args[1] == "schedu") {
+							/* Test code for scheduler
+actionmillis[1] = millis() + 1000;  // time to perform action
+action[1] = false; // 0/1 on/off
+active[1] = true; // 0/1 enabled
+actionpin[1] = 33; // 0-255 pin to turn on or off
+readpinad[1] = 0; // 0/1 is the pin a or digital
+readpin[1] = 10; // 0-255 pin to read to check if on or off
+  2     3      4       5    6
+time/action/actionpin/[AD]/readpin
+
+Serial.println(action[0]); // 0/1 on/off
+ Serial.println(active[0]); // 0/1 enabled
+Serial.println(actionpin[0]); // 0-255 pin to turn on or off
+ Serial.println(readpinad[0]); // 0/1 is the pin a or digital
+ Serial.println(readpin[0]); // 0-255 pin to read to check if on or off
+*/
+for (int x=0; x<=19; x++){
+	if (active[x] == 0){
+								char newactiontime[args[2].length()+1];
+								for (int i = 0; i < args[2].length(); i++) {
+									newactiontime[i] = args[2].charAt(i);
+								}
+								actionmillis[x] = atoi(newactiontime) + millis();
+								char newaction[args[3].length()+1];
+								for (int i = 0; i < args[3].length(); i++) {
+									newaction[i] = args[3].charAt(i);
+								}
+								if (atoi(newaction) > 0 ){
+								action[x] =  true; } else {action[x] =  false; };
+								char newactionpin[args[4].length()+1];
+								for (int i = 0; i < args[4].length(); i++) {
+									newactionpin[i] = args[4].charAt(i);
+								}
+								actionpin[x] = atoi(newactionpin);
+
+								if (args[5] == "A"){
+									readpinad[x] = false;
+								} else {
+									readpinad[x] = true;
+								}
+
+								char newreadpin[args[6].length()+1];
+								for (int i = 0; i < args[6].length(); i++) {
+									newreadpin[i] = args[6].charAt(i);
+								}
+								readpin[x] = atoi(newreadpin);
+active[x] = true;
+Serial.println();
+					client.println("HTTP/1.1 200 OK");
+					client.println("Content-Type: text/html");
+					client.println();
+										client.println(x);
+break;
+}
+}
+
+					client.println("HTTP/1.1 502");
+					client.println("Content-Type: text/html");
+					client.println();
+										client.println("failed to find free queue") ; //todo make failure callback
+}
+
+
 					} else {
 						client.println("HTTP/1.1 403 Forbidden");
 						client.println("Content-Type: text/html");
@@ -304,8 +406,8 @@ void debug(String component, int subcomponent, String message) {
 		Serial.print(subcomponent);
 		Serial.print(" - ");
 		Serial.println(message);
-		Serial.print("MEM/0 - Free:");
-		Serial.println(freeMemory());
+	//	Serial.print("MEM/0 - Free:");
+	//	Serial.println(freeMemory());
 	} 
 }
 
