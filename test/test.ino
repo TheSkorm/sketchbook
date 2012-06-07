@@ -257,7 +257,7 @@ while(lastaccheck +100 > millis() ){
 }
           for (int i =0; i<15; i++){
 laststate[i] = maxac[i];
-maxac[i] = 0;   
+//maxac[i] = 0;   
        }
 
   sendstatus(client);
