@@ -65,20 +65,17 @@ void setuppsk() {
 	}
 
 	int16_t c;
-    char a[255];
+    String pass="";
     int b = 0;
 	while ((c = file.read()) > 0) {
       if((char) c != 0x0A && (char) c != 0x0D){ //skip new lines
-		   a[b] = (char) c;
+		   pass= String(pass + (char) c);
       } else{
-         a[b] = 0x00;
          break;
       }
-		b++;
 	}
-	a[b] = 0x00;
 	file.close();
-	PSK = String(a); // TODO multi PSKs read off SD card or something
+	PSK = pass; // TODO multi PSKs read off SD card or something
          debug("PSK",-1,"password is " + PSK);
          
 }
