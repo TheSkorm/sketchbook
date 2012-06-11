@@ -1,4 +1,4 @@
-#define DEBUG_MESSAGES true
+#define DEBUG_MESSAGES  true
 #include "header.h"
 #include <SdFat.h>
 #include <Ethernet.h>
@@ -50,18 +50,20 @@ const int chipSelect = 4;
 #define BUFSIZ 1000
 
 /************ Scheduler STUFF ************/
-unsigned long actionmillis[20]; // time to perform action  TODO Turn this into struct
-bool action[20]; // 0/1 on/off
-bool active[20]; // 0/1 enabled
-int actionpin[20]; // 0-255 pin to turn on or off
-bool readpinad[20]; // 0/1 is the pin a or digital
-int readpin[20]; // 0-255 pin to read to check if on or off
+unsigned long actionmillis[5]; // time to perform action  TODO Turn this into struct
+bool action[5]; // 0/1 on/off
+bool active[5]; // 0/1 enabled
+int actionpin[5]; // 0-255 pin to turn on or off
+bool readpinad[5]; // 0/1 is the pin a or digital
+int readpin[5]; // 0-255 pin to read to check if on or off
 
 void setuppsk() {
    if (!sd.init(SPI_HALF_SPEED, chipSelect))
       sd.initErrorHalt(); // Code to make the json config file
    if (!file.open("password", O_READ)) {
+      #if DEBUG_MESSAGES == true
       debug("PSK", -1, "Failed to read SD card for PSK");
+      #endif
    }
 
    int16_t c;
@@ -76,14 +78,18 @@ void setuppsk() {
    }
    file.close();
    PSK = pass; // TODO multi PSKs read off SD card or something
+         #if DEBUG_MESSAGES == true
    debug("PSK", -1, "password is " + PSK);
+   #endif
 
 }
 
 void setup() {
    lastkeychange = millis();
    Serial.begin(57600);
+   #if DEBUG_MESSAGES == true
    debug("SERIAL", -1, "STARTED");
+   #endif
    randomSeed(analogRead(0)); //randommize the ardiuno generotor
    setuppsk();
    setup_pins();
@@ -124,19 +130,26 @@ void setup() {
 
 String templine;
 void loop() {
+   
+
+
    char clientline[BUFSIZ];
    int index = 0;
    unsigned long currentMillis = millis();
+      #if DEBUG_MESSAGES == true
+      debug("LOOP", -1, String(currentMillis));
+      #endif
    if (currentMillis - lastkeychange > 10000) {
       lastkeychange = currentMillis;
       refreshtoken();
-      updatetemp();
+      updatetemp(); //update temp takes time. Maybe check one sensor ever 10 seconds rather than both
 
    }
 
-   if (currentMillis - lastaccheck > 500) { //reset AC and check the scheduler
+   if (currentMillis - lastaccheck > 1000) { //reset AC and check the scheduler
       resetac(currentMillis);
       checksched(currentMillis);
+
    }
 
    checkac();
@@ -191,7 +204,9 @@ void loop() {
                   upto++;
                }
                if (checkhash(args)) {
+                        #if DEBUG_MESSAGES == true
                   debug("TOKEN", -1, "Passed Auth");
+                  #endif
 
                   if (args[1] == "output") {
                      httptoggleoutput(args, client);
@@ -233,7 +248,7 @@ void loop() {
    }
 
 }
-
+      #if DEBUG_MESSAGES == true
 void debug(String component, int subcomponent, String message) {
    if (DEBUG_MESSAGES == true) {
       Serial.print(component);
@@ -245,65 +260,94 @@ void debug(String component, int subcomponent, String message) {
       Serial.println(freeMemory());
    }
 }
-
+#endif
 void setup_temp(int DHT11_PIN) {
+         #if DEBUG_MESSAGES == true
    debug("TEMP", DHT11_PIN, "STARTING");
+   #endif
    nexttemp = millis() + 2000;
    dhtin.begin();
    dhtout.begin();
+         #if DEBUG_MESSAGES == true
    debug("TEMP", DHT11_PIN, "STARTED");
+   #endif
 
 }
 
 bool output_toggle(int OUTPUT_PIN) {
    if (digitalRead(OUTPUT_PIN) == HIGH) {
       digitalWrite(OUTPUT_PIN, LOW);
+            #if DEBUG_MESSAGES == true
       debug("RELAY", OUTPUT_PIN, "TOGGLED OFF");
+      #endif
       return (false);
    } else {
       digitalWrite(OUTPUT_PIN, HIGH);
+            #if DEBUG_MESSAGES == true
       debug("RELAY", OUTPUT_PIN, "TOGGLED ON");
+      #endif
       return (true);
    }
 }
 
 void setup_pins() {
+         #if DEBUG_MESSAGES == true
+
    debug("OUTPUTS", -1, "STARTING");
+#endif
    pinMode(13, OUTPUT);
    pinMode(4, OUTPUT);
    for (int i = 22; i < 42; i++) {
       pinMode(i, OUTPUT);
    }
+         #if DEBUG_MESSAGES == true
+
    debug("OUTPUTS", -1, "STARTED");
+#endif
 }
 
 void setup_sdcard() {
+         #if DEBUG_MESSAGES == true
    debug("SD", -1, "STARTING");
+   #endif
    // initialize the SD card at SPI_HALF_SPEED to avoid bus errors with
    // breadboards.  use SPI_HALF_SPEED for better performance.
    pinMode(10, OUTPUT); // set the SS pin as an output (necessary!)
    digitalWrite(10, HIGH); // but turn off the W5100 chip!
 
-   if (!card.init(SPI_HALF_SPEED, 4))
+   if (!card.init(SPI_HALF_SPEED, 4)){
+            #if DEBUG_MESSAGES == true
       debug("SD", -1, "CARD INIT FAILED");
-
+#endif
+}
    // initialize a FAT volume
-   if (!volume.init(&card))
+   if (!volume.init(&card)){
+            #if DEBUG_MESSAGES == true
       debug("SD", -1, "VOLUME INIT FAILED");
 
-   if (!root.openRoot(&volume))
+#endif
+   }
+   if (!root.openRoot(&volume)){
+      #if DEBUG_MESSAGES == true
       debug("SD", -1, "OPEN ROOT FAILED");
-
+#endif
+}
+      #if DEBUG_MESSAGES == true
    debug("SD", -1, "STARTED");
+   #endif
 }
 
 void setup_network() {
+         #if DEBUG_MESSAGES == true
    debug("NETWORK", -1, "STARTING");
+   #endif
    Ethernet.begin(mac);
    W5100.setRetransmissionTime(0x07D0); // This code is meant to stoy lock ups with wiznet
    W5100.setRetransmissionCount(3);
    server.begin();
+         #if DEBUG_MESSAGES == true
    debug("NETWORK", -1, "STARTED");
+   #endif
 }
 
 void ListFiles(EthernetClient client, uint8_t flags) {
@@ -371,7 +415,9 @@ void ListFiles(EthernetClient client, uint8_t flags) {
 }
 
 String MakeChallenge() {
+         #if DEBUG_MESSAGES == true
    debug("CHALLENGE", -1, "GENERATING CHALLENGE");
+   #endif
    char challenge[17];
    for (int i = 0; i <= 15; i++) {
       int randomnumber = random(1, 62);
@@ -385,7 +431,9 @@ String MakeChallenge() {
 
    }
    challenge[16] = 0x00; //Add null terminator to string
+         #if DEBUG_MESSAGES == true
    debug("CHALLENGE", -1, challenge);
+   #endif
    return (String(challenge));
 }
 
@@ -395,7 +443,9 @@ String MakeHash(String test) {
       tochar[i] = test.charAt(i);
    }
    tochar[test.length()] = NULL;
+         #if DEBUG_MESSAGES == true
    debug("HASH", -1, "HASHING " + String(tochar));
+   #endif
 
    unsigned char* hash = MD5::make_hash(tochar);
    char* md5str = MD5::make_digest(hash, 16);
@@ -403,7 +453,9 @@ String MakeHash(String test) {
    String returnstring = String(md5str);
    returnstring.toLowerCase();
    free(md5str); // stupid malloc issue.
+         #if DEBUG_MESSAGES == true
    debug("HASH", -1, returnstring);
+   #endif
    return (returnstring);
 }
 
@@ -448,7 +500,7 @@ void updatetemp() {
 }
 
 void checksched(unsigned long currentMillis) {
-   for (int i = 0; i <= 19; i++) { // this can be a funciotn - scheduler
+   for (int i = 0; i < 5; i++) { // this can be a funciotn - scheduler
       if (active[i]) {
          if (currentMillis > actionmillis[i]) {
             if (readpinad[i] == true) {
@@ -515,7 +567,7 @@ void httptoggleoutput(String args[8], EthernetClient client) {
    int output = atoi(name);
 
    output_toggle(output);
-   delay(20);
+   delay(5);
    unsigned long lastaccheck = millis();
    for (int i = 0; i < 15; i++) {
       maxac[i] = 0;
@@ -536,7 +588,7 @@ void httptoggleoutput(String args[8], EthernetClient client) {
 }
 
 void httpschedule(String args[8], EthernetClient client) {
-   for (int x = 0; x <= 19; x++) {
+   for (int x = 0; x < 5; x++) {
       if (active[x] == 0) {
          char newactiontime[args[2].length() + 1];
          for (int i = 0; i < args[2].length(); i++) {
@@ -597,7 +649,9 @@ void http403(EthernetClient client) {
    client.println("Content-Type: text/html");
    client.println();
    client.println("403 - Failed Auth");
+         #if DEBUG_MESSAGES == true
    debug("TOKEN", -1, "Failed Auth");
+   #endif
 }
 
 void httpreadfile(EthernetClient client, char* clientline) {
