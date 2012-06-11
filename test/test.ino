@@ -13,13 +13,12 @@
 String PSK = "insertPSKhere"; // TODO multi PSKs read off SD card or something
 String tokens[2];
 int currenttoken = 0;
-unsigned long lastkeychange = 0 ;
+unsigned long lastkeychange = 0;
 
 /************ AC stuff ************/
-unsigned long lastaccheck = 0 ;
+unsigned long lastaccheck = 0;
 int maxac[15];
 int laststate[15];
-
 
 /************ TEMP/HUMID STUFF ************/
 //#define DHT11_PIN 6      // ADC0
@@ -30,10 +29,9 @@ unsigned long nexttemp;
 DHT dhtin(47, DHTTYPE);
 DHT dhtout(45, DHTTYPE);
 float hin = 0;
-  float tin = 0;
-  float hout = 0;
-  float tout = 0;
-  
+float tin = 0;
+float hout = 0;
+float tout = 0;
 
 /************ ETHERNET STUFF ************/
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -51,555 +49,528 @@ const int chipSelect = 4;
 /************ WEBSERVER STUFF ************/
 #define BUFSIZ 1000
 
-
 /************ Scheduler STUFF ************/
-unsigned long actionmillis[20];  // time to perform action  TODO Turn this into struct
+unsigned long actionmillis[20]; // time to perform action  TODO Turn this into struct
 bool action[20]; // 0/1 on/off
 bool active[20]; // 0/1 enabled
 int actionpin[20]; // 0-255 pin to turn on or off
 bool readpinad[20]; // 0/1 is the pin a or digital
 int readpin[20]; // 0-255 pin to read to check if on or off
 
-
-
-
 void setup() {
-        lastkeychange = millis() ;
-	Serial.begin(57600);
-	debug("SERIAL", -1, "STARTED");
-	randomSeed(analogRead(0)); //randommize the ardiuno generotor
+   lastkeychange = millis();
+   Serial.begin(57600);
+   debug("SERIAL", -1, "STARTED");
+   randomSeed(analogRead(0)); //randommize the ardiuno generotor
 
-	setup_pins();
-	setup_sdcard();
-	setup_network();
-	refreshtoken();
-	refreshtoken();
+   setup_pins();
+   setup_sdcard();
+   setup_network();
+   refreshtoken();
+   refreshtoken();
 
- if (!sd.init(SPI_HALF_SPEED, chipSelect)) sd.initErrorHalt();  // Code to make the json config file
-sd.remove("config.js");
- if (!myFile.open("config.js", O_RDWR | O_CREAT | O_AT_END)) {
-    sd.errorHalt("opening config.js for write failed");
- }
- myFile.println("config({");
- myFile.println("\"D33\" : [{\"description\": \"Lounge Room Light\", \"type\": \"switch\",\"read\": \"A10\"}],");
- myFile.println("\"D41\" : [{\"description\": \"Something Else\", \"type\": \"switch\",\"read\": \"D41\"}],");
- myFile.println("\"T0\" : [{\"description\": \"Outside Temp\", \"type\": \"temp\"}],");
- myFile.println("\"T1\" : [{\"description\": \"Inside Temp\", \"type\": \"temp\"}],");
- myFile.println("\"H0\" : [{\"description\": \"Outside Humid\", \"type\": \"humid\"}],");
- myFile.println("\"H1\" : [{\"description\": \"Inside Humid\", \"type\": \"humid\"}],");
- myFile.println("\"A1\" : [{\"description\": \"Light Sensor\", \"type\": \"light\"}],");
- myFile.println("  });");
+   if (!sd.init(SPI_HALF_SPEED, chipSelect))
+      sd.initErrorHalt(); // Code to make the json config file
+   sd.remove("config.js");
+   if (!myFile.open("config.js", O_RDWR | O_CREAT | O_AT_END)) {
+      sd.errorHalt("opening config.js for write failed");
+   }
+   myFile.println("config({");
+   myFile.println("\"D22\" : [{\"description\": \"Front Outside Light\", \"type\": \"switch\",\"read\": \"A2\"}],");
+   myFile.println("\"D23\" : [{\"description\": \"Kitchen\", \"type\": \"switch\",\"read\": \"A3\"}],");
+   myFile.println("\"D24\" : [{\"description\": \"Dinning Room\", \"type\": \"switch\",\"read\": \"A4\"}],");
+   myFile.println("\"D25\" : [{\"description\": \"Lounge Room 1\", \"type\": \"switch\",\"read\": \"A5\"}],");
+   myFile.println("\"D26\" : [{\"description\": \"Lounge Room 2\", \"type\": \"switch\",\"read\": \"A6\"}],");
+   myFile.println("\"D27\" : [{\"description\": \"Lounge Room Fan\", \"type\": \"switch\",\"read\": \"A7\"}],");
+   myFile.println("\"D28\" : [{\"description\": \"Bedroom 1\", \"type\": \"switch\",\"read\": \"A8\"}],");
+   myFile.println("\"D29\" : [{\"description\": \"Bedroom 2\", \"type\": \"switch\",\"read\": \"A9\"}],");
+   myFile.println("\"D30\" : [{\"description\": \"Bedroom 3\", \"type\": \"switch\",\"read\": \"A10\"}],");
+   myFile.println("\"D31\" : [{\"description\": \"OUtside Light 1\", \"type\": \"switch\",\"read\": \"A11\"}],");
+   myFile.println("\"D32\" : [{\"description\": \"Outside Light 2\", \"type\": \"switch\",\"read\": \"A12\"}],");
 
-    myFile.close();
+   myFile.println("\"T0\" : [{\"description\": \"Outside Temp\", \"type\": \"temp\"}],");
+   myFile.println("\"T1\" : [{\"description\": \"Inside Temp\", \"type\": \"temp\"}],");
+   myFile.println("\"H0\" : [{\"description\": \"Outside Humid\", \"type\": \"humid\"}],");
+   myFile.println("\"H1\" : [{\"description\": \"Inside Humid\", \"type\": \"humid\"}],");
+   myFile.println("\"A1\" : [{\"description\": \"Light Sensor\", \"type\": \"light\"}],");
+   myFile.println("  });");
 
-/* Test code for scheduler
-actionmillis[1] = millis() + 1000;  // time to perform action
-action[1] = false; // 0/1 on/off
-active[1] = true; // 0/1 enabled
-actionpin[1] = 33; // 0-255 pin to turn on or off
-readpinad[1] = 0; // 0/1 is the pin a or digital
-readpin[1] = 10; // 0-255 pin to read to check if on or off
-*/
+   myFile.close();
 }
 
 String templine;
 void loop() {
-	char clientline[BUFSIZ];
-	int index = 0;
-  unsigned long currentMillis = millis();
-        if ( currentMillis - lastkeychange > 10000 ){
-          lastkeychange = currentMillis;
-        refreshtoken();
+   char clientline[BUFSIZ];
+   int index = 0;
+   unsigned long currentMillis = millis();
+   if (currentMillis - lastkeychange > 10000) {
+      lastkeychange = currentMillis;
+      refreshtoken();
 
-hin = dhtin.readHumidity();
-tin = dhtin.readTemperature();
-hout = dhtout.readHumidity();
-tout = dhtout.readTemperature();
-        }
-        
-        
-        if ( currentMillis - lastaccheck > 500 ){
-          lastaccheck = currentMillis;
-          for (int i =0; i<15; i++){
-laststate[i] = maxac[i];
-maxac[i] = 0;   
-       }
-
-
-
-for (int i=0; i<=19; i++){ // this can be a funciotn - scheduler
-if (active[i]){
-if (currentMillis > actionmillis[i]) {
-Serial.println(action[0]); // 0/1 on/off
- Serial.println(active[0]); // 0/1 enabled
-Serial.println(actionpin[0]); // 0-255 pin to turn on or off
- Serial.println(readpinad[0]); // 0/1 is the pin a or digital
- Serial.println(readpin[0]); // 0-255 pin to read to check if on or off
-
-   if (readpinad[i] == true){
-      if ((bool) digitalRead(readpin[i]) != (bool) action[i])  output_toggle(actionpin[i]);
-   } else {
-   	  if ((bool) laststate[readpin[i]] != (bool) action[i])  output_toggle(actionpin[i]);
+      hin = dhtin.readHumidity();
+      tin = dhtin.readTemperature();
+      hout = dhtout.readHumidity();
+      tout = dhtout.readTemperature();
    }
-active[i] = false;
-}   
-}  
-}
 
+   if (currentMillis - lastaccheck > 500) {
+      lastaccheck = currentMillis;
+      for (int i = 0; i < 15; i++) {
+         laststate[i] = maxac[i];
+         maxac[i] = 0;
+      }
 
-}
-          for (int i =0; i<15; i++){
-                    int accurrent = analogRead(i);
-        if (accurrent > maxac[i]){
-           maxac[i] = accurrent;        
-        }
-          }
+      for (int i = 0; i <= 19; i++) { // this can be a funciotn - scheduler
+         if (active[i]) {
+            if (currentMillis > actionmillis[i]) {
+               Serial.println(action[0]); // 0/1 on/off
+               Serial.println(active[0]); // 0/1 enabled
+               Serial.println(actionpin[0]); // 0-255 pin to turn on or off
+               Serial.println(readpinad[0]); // 0/1 is the pin a or digital
+               Serial.println(readpin[0]); // 0-255 pin to read to check if on or off
 
-	EthernetClient client = server.available();
+               if (readpinad[i] == true) {
+                  if ((bool) digitalRead(readpin[i]) != (bool) action[i])
+                     output_toggle(actionpin[i]);
+               } else {
+                  if ((bool) laststate[readpin[i]] != (bool) action[i])
+                     output_toggle(actionpin[i]);
+               }
+               active[i] = false;
+            }
+         }
+      }
 
-	if (client) {
-		// an http request ends with a blank line
-		boolean current_line_is_blank = true;
+   }
 
-		// reset the input buffer
-		index = 0;
-               unsigned long maxtime = millis() + 5000;
-		while (client.connected()) {
-                        if (maxtime < millis()) break;
-			if (client.available()) {
-				char c = client.read();
+   for (int i = 0; i < 15; i++) {
+      int accurrent = analogRead(i);
+      if (accurrent > maxac[i]) {
+         maxac[i] = accurrent;
+      }
+   }
 
-				// If it isn't a new line, add the character to the buffer
-				if (c != '\n' && c != '\r') {
-					clientline[index] = c;
-					index++;
-					// are we too big for the buffer? start tossing out data
-					if (index >= BUFSIZ)
-						index = BUFSIZ - 1;
+   EthernetClient client = server.available();
 
-					// continue to read more data!
-					continue;
-				}
+   if (client) {
+      // an http request ends with a blank line
+      boolean current_line_is_blank = true;
 
-				// got a \n or \r new line, which means the string is done
-				clientline[index] = 0;
+      // reset the input buffer
+      index = 0;
+      unsigned long maxtime = millis() + 5000;
+      while (client.connected()) {
+         if (maxtime < millis())
+            break;
+         if (client.available()) {
+            char c = client.read();
 
-				// Look for substring such as a request to get the root file
-				if (strstr(clientline, "GET / ") != 0) {
-					// send a standard http response header
-					client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: text/html");
-					client.println();
-					if (!file.open(&root, "INDEX.HTM", O_READ)) {
-			                     client.println("Failed to read SD card");
-					}
+            // If it isn't a new line, add the character to the buffer
+            if (c != '\n' && c != '\r') {
+               clientline[index] = c;
+               index++;
+               // are we too big for the buffer? start tossing out data
+               if (index >= BUFSIZ)
+                  index = BUFSIZ - 1;
 
-					int16_t c;
-                                        
-					while ((c = file.read()) > 0) {
-						// uncomment the serial to debug (slow!)
-						//Serial.print((char)c);
-                                                client.print((char) c);				
- 
-                                          }
-					file.close();
+               // continue to read more data!
+               continue;
+            }
 
+            // got a \n or \r new line, which means the string is done
+            clientline[index] = 0;
 
+            // Look for substring such as a request to get the root file
+            if (strstr(clientline, "GET / ") != 0) {
+               // send a standard http response header
+               client.println("HTTP/1.1 200 OK");
+               client.println("Content-Type: text/html");
+               client.println();
+               if (!file.open(&root, "INDEX.HTM", O_READ)) {
+                  client.println("Failed to read SD card");
+               }
 
-				} else if (strstr(clientline, "GET /t/") != 0) {
-					char *check;
-					String args[8] = "";
-					int upto = 0;
-					check = clientline + 7; //incorrect sive causes issues TODO fix - security hole or some shit
-					(strstr(clientline, " HTTP"))[0] = 0;
-					char * pnt;
-					char dem[] = "/";
-					pnt = strtok(check, dem);
-					while (pnt != NULL && upto < 8) {
-						args[upto] = pnt;
-						pnt = strtok(NULL, dem);
-						upto++;
-					}
+               int16_t c;
 
+               while ((c = file.read()) > 0) {
+                  // uncomment the serial to debug (slow!)
+                  //Serial.print((char)c);
+                  client.print((char) c);
 
-					if ((MakeHash(
-							tokens[0] + PSK + args[1] + args[2] + args[3]
-									+ args[4] + args[5] + args[6] + args[7])
-							== args[0])||
-(MakeHash(
-							tokens[1] + PSK + args[1] + args[2] + args[3]
-									+ args[4] + args[5] + args[6] + args[7])
-							== args[0]))
+               }
+               file.close();
 
-{
-						debug("TOKEN", -1, "Passed Auth");
+            } else if (strstr(clientline, "GET /t/") != 0) {
+               char *check;
+               String args[8] = "";
+               int upto = 0;
+               check = clientline + 7; //incorrect sive causes issues TODO fix - security hole or some shit
+               (strstr(clientline, " HTTP"))[0] = 0;
+               char * pnt;
+               char dem[] = "/";
+               pnt = strtok(check, dem);
+               while (pnt != NULL && upto < 8) {
+                  args[upto] = pnt;
+                  pnt = strtok(NULL, dem);
+                  upto++;
+               }
 
-						if (args[1] == "output") {
-								char name[args[2].length()+1];
-								for (int i = 0; i < args[2].length(); i++) {
-									name[i] = args[2].charAt(i);
-								}
-								int output = atoi(name);
+               if ((MakeHash(tokens[0] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6] + args[7]) == args[0]) || (MakeHash(tokens[1] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6] + args[7]) == args[0]))
 
-			                                        output_toggle(output);
- delay(20);
-  unsigned long lastaccheck = millis();
-            for (int i =0; i<15; i++){
-maxac[i] = 0;   
-       }
-while(lastaccheck +100 > millis() ){
-          for (int i =0; i<15; i++){
-                    int accurrent = analogRead(i);
-        if (accurrent > maxac[i]){
-           maxac[i] = accurrent;        
-        }
-          }
-}
-          for (int i =0; i<15; i++){
-laststate[i] = maxac[i];
-//maxac[i] = 0;   
-       }
+               {
+                  debug("TOKEN", -1, "Passed Auth");
 
-  sendstatus(client);
+                  if (args[1] == "output") {
+                     char name[args[2].length() + 1];
+                     for (int i = 0; i < args[2].length(); i++) {
+                        name[i] = args[2].charAt(i);
+                     }
+                     int output = atoi(name);
 
-	
-						}	else if (args[1] == "schedu") {
-							/* Test code for scheduler
-actionmillis[1] = millis() + 1000;  // time to perform action
-action[1] = false; // 0/1 on/off
-active[1] = true; // 0/1 enabled
-actionpin[1] = 33; // 0-255 pin to turn on or off
-readpinad[1] = 0; // 0/1 is the pin a or digital
-readpin[1] = 10; // 0-255 pin to read to check if on or off
-  2     3      4       5    6
-time/action/actionpin/[AD]/readpin
+                     output_toggle(output);
+                     delay(20);
+                     unsigned long lastaccheck = millis();
+                     for (int i = 0; i < 15; i++) {
+                        maxac[i] = 0;
+                     }
+                     while (lastaccheck + 100 > millis()) {
+                        for (int i = 0; i < 15; i++) {
+                           int accurrent = analogRead(i);
+                           if (accurrent > maxac[i]) {
+                              maxac[i] = accurrent;
+                           }
+                        }
+                     }
+                     for (int i = 0; i < 15; i++) {
+                        laststate[i] = maxac[i];
+                     }
 
-Serial.println(action[0]); // 0/1 on/off
- Serial.println(active[0]); // 0/1 enabled
-Serial.println(actionpin[0]); // 0-255 pin to turn on or off
- Serial.println(readpinad[0]); // 0/1 is the pin a or digital
- Serial.println(readpin[0]); // 0-255 pin to read to check if on or off
-*/
-for (int x=0; x<=19; x++){
-	if (active[x] == 0){
-								char newactiontime[args[2].length()+1];
-								for (int i = 0; i < args[2].length(); i++) {
-									newactiontime[i] = args[2].charAt(i);
-								}
-								actionmillis[x] = atoi(newactiontime) + millis();
-								char newaction[args[3].length()+1];
-								for (int i = 0; i < args[3].length(); i++) {
-									newaction[i] = args[3].charAt(i);
-								}
-								if (atoi(newaction) > 0 ){
-								action[x] =  true; } else {action[x] =  false; };
-								char newactionpin[args[4].length()+1];
-								for (int i = 0; i < args[4].length(); i++) {
-									newactionpin[i] = args[4].charAt(i);
-								}
-								actionpin[x] = atoi(newactionpin);
+                     sendstatus(client);
 
-								if (args[5] == "A"){
-									readpinad[x] = false;
-								} else {
-									readpinad[x] = true;
-								}
+                  } else if (args[1] == "schedu") {
+                     for (int x = 0; x <= 19; x++) {
+                        if (active[x] == 0) {
+                           char newactiontime[args[2].length() + 1];
+                           for (int i = 0; i < args[2].length(); i++) {
+                              newactiontime[i] = args[2].charAt(i);
+                           }
+                           actionmillis[x] = atoi(newactiontime) + millis();
+                           char newaction[args[3].length() + 1];
+                           for (int i = 0; i < args[3].length(); i++) {
+                              newaction[i] = args[3].charAt(i);
+                           }
+                           if (atoi(newaction) > 0) {
+                              action[x] = true;
+                           } else {
+                              action[x] = false;
+                           };
+                           char newactionpin[args[4].length() + 1];
+                           for (int i = 0; i < args[4].length(); i++) {
+                              newactionpin[i] = args[4].charAt(i);
+                           }
+                           actionpin[x] = atoi(newactionpin);
 
-								char newreadpin[args[6].length()+1];
-								for (int i = 0; i < args[6].length(); i++) {
-									newreadpin[i] = args[6].charAt(i);
-								}
-								readpin[x] = atoi(newreadpin);
-active[x] = true;
-Serial.println();
-					client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: text/html");
-					client.println();
-										client.println(x);
-break;
-}
-}
+                           if (args[5] == "A") {
+                              readpinad[x] = false;
+                           } else {
+                              readpinad[x] = true;
+                           }
 
-					client.println("HTTP/1.1 502");
-					client.println("Content-Type: text/html");
-					client.println();
-										client.println("failed to find free queue") ; //todo make failure callback
-}
+                           char newreadpin[args[6].length() + 1];
+                           for (int i = 0; i < args[6].length(); i++) {
+                              newreadpin[i] = args[6].charAt(i);
+                           }
+                           readpin[x] = atoi(newreadpin);
+                           active[x] = true;
+                           Serial.println();
+                           client.println("HTTP/1.1 200 OK");
+                           client.println("Content-Type: text/html");
+                           client.println();
+                           client.println(x);
+                           break;
+                        }
+                     }
 
+                     client.println("HTTP/1.1 502");
+                     client.println("Content-Type: text/html");
+                     client.println();
+                     client.println("failed to find free queue"); //todo make failure callback
+                  }
 
-					} else {
-						client.println("HTTP/1.1 403 Forbidden");
-						client.println("Content-Type: text/html");
-						client.println();
-						delay(200);
-						client.println("403 - Failed Auth");
-						debug("TOKEN", -1, "Failed Auth");
+               } else {
+                  client.println("HTTP/1.1 403 Forbidden");
+                  client.println("Content-Type: text/html");
+                  client.println();
+                  delay(200);
+                  client.println("403 - Failed Auth");
+                  debug("TOKEN", -1, "Failed Auth");
 
-					}
+               }
 
-				} else if (strstr(clientline, "GET /t ") != 0) {
-					client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: application/javascript");
-					client.println();
-					client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
+            } else if (strstr(clientline, "GET /t ") != 0) {
+               client.println("HTTP/1.1 200 OK");
+               client.println("Content-Type: application/javascript");
+               client.println();
+               client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
 
-					// print all the files, use a helper to keep it clean
-                                } else if (strstr(clientline, "GET /t?") != 0) {
-                              		client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: application/javascript");
-					client.println();
-					client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
+               // print all the files, use a helper to keep it clean
+            } else if (strstr(clientline, "GET /t?") != 0) {
+               client.println("HTTP/1.1 200 OK");
+               client.println("Content-Type: application/javascript");
+               client.println();
+               client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
 
- 				} else if (strstr(clientline, "GET /status") != 0) {
-sendstatus(client);
-                                                                   
-				} else if (strstr(clientline, "GET /") != 0) {
-					// this time no space after the /, so a sub-file!
-					char *filename;
+            } else if (strstr(clientline, "GET /status") != 0) {
+               sendstatus(client);
 
-					filename = clientline + 5; // look after the "GET /" (5 chars)
-					// a little trick, look for the " HTTP/1.1" string and
-					// turn the first character of the substring into a 0 to clear it out.
-					(strstr(clientline, " HTTP"))[0] = 0;
+            } else if (strstr(clientline, "GET /") != 0) {
+               // this time no space after the /, so a sub-file!
+               char *filename;
 
-					if (!file.open(&root, filename, O_READ)) {
-					client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: text/html");
-					client.println();
-					ListFiles(client, LS_SIZE);
-						break;
-					}
+               filename = clientline + 5; // look after the "GET /" (5 chars)
+               // a little trick, look for the " HTTP/1.1" string and
+               // turn the first character of the substring into a 0 to clear it out.
+               (strstr(clientline, " HTTP"))[0] = 0;
 
-					client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: text/html");
-					client.println();
+               if (!file.open(&root, filename, O_READ)) {
+                  client.println("HTTP/1.1 200 OK");
+                  client.println("Content-Type: text/html");
+                  client.println();
+                  ListFiles(client, LS_SIZE);
+                  break;
+               }
 
-					int16_t c;
-					while ((c = file.read()) > 0) {
-						// uncomment the serial to debug (slow!)
-						//Serial.print((char)c);
-						client.print((char) c);
-					}
-					file.close();
-				} else {
-					// everything else is a 404
-					client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: text/html");
-					client.println();
-					ListFiles(client, LS_SIZE);
-				}
-				break;
-			}
-		}
+               client.println("HTTP/1.1 200 OK");
+               client.println("Content-Type: text/html");
+               client.println();
 
-		// give the web browser time to receive the data
-		delay(2);
-		client.stop();
-	}
+               int16_t c;
+               while ((c = file.read()) > 0) {
+                  // uncomment the serial to debug (slow!)
+                  //Serial.print((char)c);
+                  client.print((char) c);
+               }
+               file.close();
+            } else {
+               // everything else is a 404
+               client.println("HTTP/1.1 200 OK");
+               client.println("Content-Type: text/html");
+               client.println();
+               ListFiles(client, LS_SIZE);
+            }
+            break;
+         }
+      }
+
+      // give the web browser time to receive the data
+      delay(2);
+      client.stop();
+   }
 
 }
 
 void debug(String component, int subcomponent, String message) {
-	if (DEBUG_MESSAGES == true) {
-		Serial.print(component);
-		Serial.print("/");
-		Serial.print(subcomponent);
-		Serial.print(" - ");
-		Serial.println(message);
-	//	Serial.print("MEM/0 - Free:");
-	//	Serial.println(freeMemory());
-	} 
+   if (DEBUG_MESSAGES == true) {
+      Serial.print(component);
+      Serial.print("/");
+      Serial.print(subcomponent);
+      Serial.print(" - ");
+      Serial.println(message);
+      //	Serial.print("MEM/0 - Free:");
+      //	Serial.println(freeMemory());
+   }
 }
 
 void setup_temp(int DHT11_PIN) {
-	debug("TEMP", DHT11_PIN, "STARTING");
-	nexttemp = millis() + 2000;
-  dhtin.begin();
-  dhtout.begin();
-	debug("TEMP", DHT11_PIN, "STARTED");
+   debug("TEMP", DHT11_PIN, "STARTING");
+   nexttemp = millis() + 2000;
+   dhtin.begin();
+   dhtout.begin();
+   debug("TEMP", DHT11_PIN, "STARTED");
 
 }
 
 bool output_toggle(int OUTPUT_PIN) {
-	if (digitalRead(OUTPUT_PIN) == HIGH) {
-		digitalWrite(OUTPUT_PIN, LOW);
-		debug("RELAY", OUTPUT_PIN, "TOGGLED OFF");
-		return (false);
-	} else {
-		digitalWrite(OUTPUT_PIN, HIGH);
-		debug("RELAY", OUTPUT_PIN, "TOGGLED ON");
-		return (true);
-	}
+   if (digitalRead(OUTPUT_PIN) == HIGH) {
+      digitalWrite(OUTPUT_PIN, LOW);
+      debug("RELAY", OUTPUT_PIN, "TOGGLED OFF");
+      return (false);
+   } else {
+      digitalWrite(OUTPUT_PIN, HIGH);
+      debug("RELAY", OUTPUT_PIN, "TOGGLED ON");
+      return (true);
+   }
 }
 
 void setup_pins() {
-	debug("OUTPUTS", -1, "STARTING");
-	pinMode(13, OUTPUT);
-	pinMode(4, OUTPUT);
-	for (int i = 22; i < 42; i++){
-		pinMode(i, OUTPUT);	}
-	debug("OUTPUTS", -1, "STARTED");
+   debug("OUTPUTS", -1, "STARTING");
+   pinMode(13, OUTPUT);
+   pinMode(4, OUTPUT);
+   for (int i = 22; i < 42; i++) {
+      pinMode(i, OUTPUT);
+   }
+   debug("OUTPUTS", -1, "STARTED");
 }
 
 void setup_sdcard() {
-	debug("SD", -1, "STARTING");
-	// initialize the SD card at SPI_HALF_SPEED to avoid bus errors with
-	// breadboards.  use SPI_FULL_SPEED for better performance.
-	pinMode(10, OUTPUT); // set the SS pin as an output (necessary!)
-	digitalWrite(10, HIGH); // but turn off the W5100 chip!
+   debug("SD", -1, "STARTING");
+   // initialize the SD card at SPI_HALF_SPEED to avoid bus errors with
+   // breadboards.  use SPI_FULL_SPEED for better performance.
+   pinMode(10, OUTPUT); // set the SS pin as an output (necessary!)
+   digitalWrite(10, HIGH); // but turn off the W5100 chip!
 
-	if (!card.init(SPI_FULL_SPEED, 4))
-		debug("SD", -1, "CARD INIT FAILED");
+   if (!card.init(SPI_FULL_SPEED, 4))
+      debug("SD", -1, "CARD INIT FAILED");
 
-	// initialize a FAT volume
-	if (!volume.init(&card))
-		debug("SD", -1, "VOLUME INIT FAILED");
+   // initialize a FAT volume
+   if (!volume.init(&card))
+      debug("SD", -1, "VOLUME INIT FAILED");
 
-	if (!root.openRoot(&volume))
-		debug("SD", -1, "OPEN ROOT FAILED");
+   if (!root.openRoot(&volume))
+      debug("SD", -1, "OPEN ROOT FAILED");
 
-	debug("SD", -1, "STARTED");
+   debug("SD", -1, "STARTED");
 }
 
 void setup_network() {
-	debug("NETWORK", -1, "STARTING");
-	Ethernet.begin(mac);
-	W5100.setRetransmissionTime(0x07D0); // This code is meant to stoy lock ups with wiznet
-	W5100.setRetransmissionCount(3);
-	server.begin();
-	debug("NETWORK", -1, "STARTED");
+   debug("NETWORK", -1, "STARTING");
+   Ethernet.begin(mac);
+   W5100.setRetransmissionTime(0x07D0); // This code is meant to stoy lock ups with wiznet
+   W5100.setRetransmissionCount(3);
+   server.begin();
+   debug("NETWORK", -1, "STARTED");
 }
 
 void ListFiles(EthernetClient client, uint8_t flags) {
-	// This code is just copied from SdFile.cpp in the SDFat library
-	// and tweaked to print to the client output in html!
-	dir_t p;
+   // This code is just copied from SdFile.cpp in the SDFat library
+   // and tweaked to print to the client output in html!
+   dir_t p;
 
-	root.rewind();
-	client.println("<ul>");
-	while (root.readDir(p) > 0) {
-		// done if past last used entry
-		if (p.name[0] == DIR_NAME_FREE)
-			break;
+   root.rewind();
+   client.println("<ul>");
+   while (root.readDir(p) > 0) {
+      // done if past last used entry
+      if (p.name[0] == DIR_NAME_FREE)
+         break;
 
-		// skip deleted entry and entries for . and  ..
-		if (p.name[0] == DIR_NAME_DELETED || p.name[0] == '.')
-			continue;
+      // skip deleted entry and entries for . and  ..
+      if (p.name[0] == DIR_NAME_DELETED || p.name[0] == '.')
+         continue;
 
-		// only list subdirectories and files
-		if (!DIR_IS_FILE_OR_SUBDIR(&p))
-			continue;
+      // only list subdirectories and files
+      if (!DIR_IS_FILE_OR_SUBDIR(&p))
+         continue;
 
-		// print any indent spaces
-		client.print("<li><a href=\"");
-		for (uint8_t i = 0; i < 11; i++) {
-			if (p.name[i] == ' ')
-				continue;
-			if (i == 8) {
-				client.print('.');
-			}
-			client.print((char) p.name[i]);
-		}
-		client.print("\">");
+      // print any indent spaces
+      client.print("<li><a href=\"");
+      for (uint8_t i = 0; i < 11; i++) {
+         if (p.name[i] == ' ')
+            continue;
+         if (i == 8) {
+            client.print('.');
+         }
+         client.print((char) p.name[i]);
+      }
+      client.print("\">");
 
-		// print file name with possible blank fill
-		for (uint8_t i = 0; i < 11; i++) {
-			if (p.name[i] == ' ')
-				continue;
-			if (i == 8) {
-				client.print('.');
-			}
-			client.print((char) p.name[i]);
-		}
+      // print file name with possible blank fill
+      for (uint8_t i = 0; i < 11; i++) {
+         if (p.name[i] == ' ')
+            continue;
+         if (i == 8) {
+            client.print('.');
+         }
+         client.print((char) p.name[i]);
+      }
 
-		client.print("</a>");
+      client.print("</a>");
 
-		if (DIR_IS_SUBDIR(&p)) {
-			client.print('/');
-		}
+      if (DIR_IS_SUBDIR(&p)) {
+         client.print('/');
+      }
 
-		// print modify date/time if requested
-		if (flags & LS_DATE) {
-			root.printFatDate(p.lastWriteDate);
-			client.print(' ');
-			root.printFatTime(p.lastWriteTime);
-		}
-		// print size if requested
-		if (!DIR_IS_SUBDIR(&p) && (flags & LS_SIZE)) {
-			client.print(' ');
-			client.print(p.fileSize);
-		}
-		client.println("</li>");
-	}
-	client.println("</ul>");
+      // print modify date/time if requested
+      if (flags & LS_DATE) {
+         root.printFatDate(p.lastWriteDate);
+         client.print(' ');
+         root.printFatTime(p.lastWriteTime);
+      }
+      // print size if requested
+      if (!DIR_IS_SUBDIR(&p) && (flags & LS_SIZE)) {
+         client.print(' ');
+         client.print(p.fileSize);
+      }
+      client.println("</li>");
+   }
+   client.println("</ul>");
 }
 
 String MakeChallenge() {
-	debug("CHALLENGE", -1, "GENERATING CHALLENGE");
-	char challenge[17];
-	for (int i = 0; i <= 15; i++) {
-		int randomnumber = random(1, 62);
-		if (randomnumber < 26) {
-			challenge[i] = char(int(65) + randomnumber);
-		} else if (randomnumber >= 26 & randomnumber < 52) {
-			challenge[i] = char(int(97) + randomnumber - 26);
-		} else {
-			challenge[i] = char(int(48) + randomnumber - 52);
-		}
+   debug("CHALLENGE", -1, "GENERATING CHALLENGE");
+   char challenge[17];
+   for (int i = 0; i <= 15; i++) {
+      int randomnumber = random(1, 62);
+      if (randomnumber < 26) {
+         challenge[i] = char(int(65) + randomnumber);
+      } else if (randomnumber >= 26 & randomnumber < 52) {
+         challenge[i] = char(int(97) + randomnumber - 26);
+      } else {
+         challenge[i] = char(int(48) + randomnumber - 52);
+      }
 
-	}
-	challenge[16] = 0x00; //Add null terminator to string
-	debug("CHALLENGE", -1, challenge);
-	return (String(challenge));
+   }
+   challenge[16] = 0x00; //Add null terminator to string
+   debug("CHALLENGE", -1, challenge);
+   return (String(challenge));
 }
 
 String MakeHash(String test) {
-	char tochar[test.length() + 1];
-	for (int i = 0; i < test.length(); i++) {
-		tochar[i] = test.charAt(i);
-	}
-	tochar[test.length()] = NULL;
-	debug("HASH", -1, "HASHING " + String(tochar));
+   char tochar[test.length() + 1];
+   for (int i = 0; i < test.length(); i++) {
+      tochar[i] = test.charAt(i);
+   }
+   tochar[test.length()] = NULL;
+   debug("HASH", -1, "HASHING " + String(tochar));
 
-	unsigned char* hash = MD5::make_hash(tochar);
-	char* md5str = MD5::make_digest(hash, 16);
+   unsigned char* hash = MD5::make_hash(tochar);
+   char* md5str = MD5::make_digest(hash, 16);
 
-	String returnstring = String(md5str);
-	returnstring.toLowerCase();
-	free(md5str); // stupid malloc issue.
-	debug("HASH", -1, returnstring);
-	return (returnstring);
+   String returnstring = String(md5str);
+   returnstring.toLowerCase();
+   free(md5str); // stupid malloc issue.
+   debug("HASH", -1, returnstring);
+   return (returnstring);
 }
 
 void refreshtoken() {
-        currenttoken++;
-        if (currenttoken > 1){
-          currenttoken = 0;
-        };
-     
-	tokens[currenttoken] = MakeChallenge();
+   currenttoken++;
+   if (currenttoken > 1) {
+      currenttoken = 0;
+   };
+
+   tokens[currenttoken] = MakeChallenge();
 }
 
-void sendstatus(EthernetClient client){
-  					client.println("HTTP/1.1 200 OK");
-					client.println("Content-Type: application/javascript");
-					client.println();
-							client.println("status({");
-							for (int i = 22; i < 42; i++){
-								client.println("\"D" + String(i)+"\":"+String(digitalRead(i))+",");
-							} 
-                                                        for (int i = 0; i < 15; i++){
-								client.println("\"A" + String(i)+"\":"+String(laststate[i])+",");
-							} 
-								client.print("\"T0\":");
-                                                                client.print(tin);
-								client.print(",\n\"T1\":");
-                                                                client.print(tout);
-								client.print(",\n\"H0\":");
-                                                                client.print(hin);
-	       						client.print(",\n\"H1\":");
-                                                                client.print(hout);
-							client.println("});");
-					client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
-                                  
+void sendstatus(EthernetClient client) {
+   client.println("HTTP/1.1 200 OK");
+   client.println("Content-Type: application/javascript");
+   client.println();
+   client.println("status({");
+   for (int i = 22; i < 42; i++) {
+      client.println("\"D" + String(i) + "\":" + String(digitalRead(i)) + ",");
+   }
+   for (int i = 0; i < 15; i++) {
+      client.println("\"A" + String(i) + "\":" + String(laststate[i]) + ",");
+   }
+   client.print("\"T0\":");
+   client.print(tin);
+   client.print(",\n\"T1\":");
+   client.print(tout);
+   client.print(",\n\"H0\":");
+   client.print(hin);
+   client.print(",\n\"H1\":");
+   client.print(hout);
+   client.println("});");
+   client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
+
 }

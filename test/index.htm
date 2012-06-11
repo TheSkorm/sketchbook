@@ -42,7 +42,7 @@ for (var pin in response){
 
 if ( document.getElementById(pin)){
  if (settings[pin][0].type == "switch"){
-    if (response[settings[pin][0].read]){
+    if (response[settings[pin][0].read] > 5 ){
  $(document.getElementById(pin)).buttonMarkup({ theme: "c" });
  $("#" + pin + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("Off","On"));
   $(document.getElementById(pin))[0].className = "switch ui-btn-hover-c ui-btn ui-btn-up-c ui-shadow ui-btn-corner-all";
