@@ -10,10 +10,10 @@
 #include "WString.h"
 
 /************ENCRYPTION STUFF ************/
-String PSK = "insertPSKhere"; // TODO multi PSKs read off SD card or something
 String tokens[2];
 int currenttoken = 0;
 unsigned long lastkeychange = 0;
+String PSK;
 
 /************ AC stuff ************/
 unsigned long lastaccheck = 0;
@@ -57,19 +57,44 @@ int actionpin[20]; // 0-255 pin to turn on or off
 bool readpinad[20]; // 0/1 is the pin a or digital
 int readpin[20]; // 0-255 pin to read to check if on or off
 
+void setuppsk() {
+	if (!sd.init(SPI_FULL_SPEED, chipSelect))
+       sd.initErrorHalt(); // Code to make the json config file
+	if (!file.open("password", O_READ)) {
+	   debug("PSK",-1,"Failed to read SD card for PSK");
+	}
+
+	int16_t c;
+    char a[255];
+    int b = 0;
+	while ((c = file.read()) > 0) {
+      if((char) c != 0x0A && (char) c != 0x0D){ //skip new lines
+		   a[b] = (char) c;
+      } else{
+         a[b] = 0x00;
+         break;
+      }
+		b++;
+	}
+	a[b] = 0x00;
+	file.close();
+	PSK = String(a); // TODO multi PSKs read off SD card or something
+         debug("PSK",-1,"password is " + PSK);
+}
+
 void setup() {
    lastkeychange = millis();
    Serial.begin(57600);
    debug("SERIAL", -1, "STARTED");
    randomSeed(analogRead(0)); //randommize the ardiuno generotor
-
+   setuppsk();
    setup_pins();
    setup_sdcard();
    setup_network();
    refreshtoken();
    refreshtoken();
 
-   if (!sd.init(SPI_HALF_SPEED, chipSelect))
+   if (!sd.init(SPI_FULL_SPEED, chipSelect))
       sd.initErrorHalt(); // Code to make the json config file
    sd.remove("config.js");
    if (!myFile.open("config.js", O_RDWR | O_CREAT | O_AT_END)) {
@@ -96,6 +121,7 @@ void setup() {
    myFile.println("  });");
 
    myFile.close();
+
 }
 
 String templine;
@@ -214,7 +240,6 @@ void loop() {
                   pnt = strtok(NULL, dem);
                   upto++;
                }
-
                if ((MakeHash(tokens[0] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6] + args[7]) == args[0]) || (MakeHash(tokens[1] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6] + args[7]) == args[0]))
 
                {
@@ -319,7 +344,11 @@ void loop() {
                client.println("Content-Type: application/javascript");
                client.println();
                client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
-
+            } else if (strstr(clientline,"GET /password") != 0){
+               client.println("HTTP/1.1 403 Forbidden");
+               client.println("Content-Type: text/html");
+               client.println();
+               client.println("403 - Fuck off"); 
             } else if (strstr(clientline, "GET /status") != 0) {
                sendstatus(client);
 
