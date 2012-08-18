@@ -27,7 +27,7 @@ unsigned long nexttemp;
 #include "DHT.h"
 #define DHTTYPE DHT11
 DHT dhtin(47, DHTTYPE);
-DHT dhtout(45, DHTTYPE);
+DHT dhtout(46, DHTTYPE);
 float hin = 0;
 float tin = 0;
 float hout = 0;
@@ -57,6 +57,81 @@ int actionpin[5]; // 0-255 pin to turn on or off
 bool readpinad[5]; // 0/1 is the pin a or digital
 int readpin[5]; // 0-255 pin to read to check if on or off
 
+/************ Door lock *****************/
+bool lastdoor;
+#define DOORLOCKOUTPUT 45
+#define DOORLOCKINPUT 43
+/** checks the door unlock switch **/
+void checkdoor(){ 
+  bool reading = digitalRead(DOORLOCKINPUT);
+  if (lastdoor != reading){
+      lastdoor = reading;
+      toggle_door(); 
+      debug("LCK",0,"Door lock toggled");
+   }
+}
+//changes door state
+void toggle_door(){
+         debug("LCK",0,"Door lock toggled2");
+   digitalWrite(DOORLOCKOUTPUT, HIGH);
+ //  int x = 0;
+   int y = -1;
+     for (int x = 0; x < 5; x++) {
+         if (active[x] == 1) {
+            if (actionpin[x] == DOORLOCKOUTPUT){  // check for existing lock to extend
+               y = x;
+            }
+         }
+      }
+      if (y == -1)
+      {
+           for (int x = 0; x < 5; x++) {
+            if (active[x] == 0) {
+             y = x;   //findd empty sched
+             break;
+             }
+      }
+   }
+      if (y == -1){ // if all else fails overwrite 0
+         y = 0;
+      }
+         actionmillis[y] =  millis() + 12000; //set the door to unlock for 12 seconds
+         active[y] = true;
+         action[y] = false;
+         actionpin[y] = DOORLOCKOUTPUT;
+         readpinad[y] = 1;
+         readpin[y] = DOORLOCKOUTPUT; // just read the state of the IO.
+if ((bool) laststate[2] < 9){
+output_toggle(22);
+
+   int y = -1;
+     for (int x = 0; x < 5; x++) {
+         if (active[x] == 1) {
+            if (actionpin[x] == 22){  // check for existing light sched
+               y = x;
+            }
+         }
+      }
+      if (y == -1)
+      {
+           for (int x = 0; x < 5; x++) {
+            if (active[x] == 0) {
+             y = x;   //find empty sched
+             break;
+             }
+      }
+   }
+         actionmillis[y] =  millis() + 60000; //set the door to unlock for 12 seconds
+         active[y] = true;
+         action[y] = false;
+         actionpin[y] = 22;
+         readpinad[y] = 0;
+         readpin[y] = 2; // just read the state of the IO.
+
+}
+
+}
+
 void setuppsk() {
    if (!sd.init(SPI_HALF_SPEED, chipSelect))
       sd.initErrorHalt(); // Code to make the json config file
@@ -85,6 +160,10 @@ void setuppsk() {
 }
 
 void setup() {
+
+
+
+
    lastkeychange = millis();
    Serial.begin(57600);
    #if DEBUG_MESSAGES == true
@@ -98,8 +177,15 @@ void setup() {
    refreshtoken();
    refreshtoken();
 
+
+
+
    if (!sd.init(SPI_HALF_SPEED, chipSelect))
       sd.initErrorHalt(); // Code to make the json config file
+
+   
+
+   myFile.close();
    sd.remove("config.js");
    if (!myFile.open("config.js", O_RDWR | O_CREAT | O_AT_END)) {
       sd.errorHalt("opening config.js for write failed");
@@ -116,7 +202,7 @@ void setup() {
    myFile.println("\"D30\" : [{\"description\": \"Bedroom 3\", \"type\": \"switch\",\"read\": \"A10\"}],");
    myFile.println("\"D31\" : [{\"description\": \"Outside Light 1\", \"type\": \"switch\",\"read\": \"A11\"}],");
    myFile.println("\"D32\" : [{\"description\": \"Outside Light 2\", \"type\": \"switch\",\"read\": \"A12\"}],");
-
+   myFile.println("\"D45\" : [{\"description\": \"Front Door\", \"type\": \"door\"}],");
    myFile.println("\"T0\" : [{\"description\": \"Outside Temp\", \"type\": \"temp\"}],");
    myFile.println("\"T1\" : [{\"description\": \"Inside Temp\", \"type\": \"temp\"}],");
    myFile.println("\"H0\" : [{\"description\": \"Outside Humid\", \"type\": \"humid\"}],");
@@ -128,16 +214,15 @@ void setup() {
 
 }
 
-String templine;
 void loop() {
-   
+   checkdoor();
 
 
    char clientline[BUFSIZ];
    int index = 0;
    unsigned long currentMillis = millis();
       #if DEBUG_MESSAGES == true
-      debug("LOOP", -1, String(currentMillis));
+    //  debug("LOOP", -1, String(currentMillis));
       #endif
    if (currentMillis - lastkeychange > 10000) {
       lastkeychange = currentMillis;
@@ -297,6 +382,7 @@ void setup_pins() {
 #endif
    pinMode(13, OUTPUT);
    pinMode(4, OUTPUT);
+   pinMode(45, OUTPUT);
    for (int i = 22; i < 42; i++) {
       pinMode(i, OUTPUT);
    }
@@ -503,10 +589,20 @@ void checksched(unsigned long currentMillis) {
    for (int i = 0; i < 5; i++) { // this can be a funciotn - scheduler
       if (active[i]) {
          if (currentMillis > actionmillis[i]) {
+                  #if DEBUG_MESSAGES == true
+      debug("SCHED", -1, "Fired");
+      #endif
             if (readpinad[i] == true) {
+
+                                 #if DEBUG_MESSAGES == true
+      debug("SCHED", -1, "Fired2");
+      #endif
                if ((bool) digitalRead(readpin[i]) != (bool) action[i])
                   output_toggle(actionpin[i]);
             } else {
+                                 #if DEBUG_MESSAGES == true
+      debug("SCHED", -1, "Fired3");
+      #endif
                if ((bool) laststate[readpin[i]] != (bool) action[i])
                   output_toggle(actionpin[i]);
             }
