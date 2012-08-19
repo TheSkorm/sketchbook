@@ -183,11 +183,10 @@ void setup() {
    if (!sd.init(SPI_HALF_SPEED, chipSelect))
       sd.initErrorHalt(); // Code to make the json config file
 
-   
 
-   myFile.close();
-   sd.remove("config.js");
-   if (!myFile.open("config.js", O_RDWR | O_CREAT | O_AT_END)) {
+
+      sd.remove("config.js");
+   if (!myFile.open("config.js", O_RDWR | O_CREAT | O_TRUNC)) {
       sd.errorHalt("opening config.js for write failed");
    }
    myFile.println("config({");
@@ -218,7 +217,7 @@ void loop() {
    checkdoor();
 
 
-   char clientline[BUFSIZ];
+   static char clientline[BUFSIZ];
    int index = 0;
    unsigned long currentMillis = millis();
       #if DEBUG_MESSAGES == true
@@ -227,7 +226,7 @@ void loop() {
    if (currentMillis - lastkeychange > 10000) {
       lastkeychange = currentMillis;
       refreshtoken();
-      updatetemp(); //update temp takes time. Maybe check one sensor ever 10 seconds rather than both
+     // updatetemp(); //update temp takes time. Maybe check one sensor ever 10 seconds rather than both
 
    }
 
@@ -259,7 +258,7 @@ void loop() {
                clientline[index] = c;
                index++;
                // are we too big for the buffer? start tossing out data
-               if (index >= BUFSIZ)
+               if (index >= BUFSIZ -1)
                   index = BUFSIZ - 1;
 
                // continue to read more data!
@@ -270,24 +269,66 @@ void loop() {
             clientline[index] = 0;
 
             // Look for substring such as a request to get the root file
+            clientline[BUFSIZ -1] = NULL;
             if (strstr(clientline, "GET / ") != 0) {
                // send a standard http response header
                showindex(client);
 
             } else if (strstr(clientline, "GET /t/") != 0) {
-               char *check;
-               String args[8] = "";
-               int upto = 0;
-               check = clientline + 7; //incorrect size causes issues TODO fix - security hole or some shit
-               (strstr(clientline, " HTTP"))[0] = 0;
-               char * pnt;
-               char dem[] = "/";
-               pnt = strtok(check, dem);
-               while (pnt != NULL && upto < 8) {
-                  args[upto] = pnt;
-                  pnt = strtok(NULL, dem);
-                  upto++;
+
+               String args[8];
+               String tosplit = String(clientline);
+               tosplit = tosplit.substring(0, tosplit.indexOf(" HTTP"));
+               int lastfind = 0;
+               int togo = 0;
+               int argno = 2;
+               Serial.println(tosplit);
+               while (tosplit.indexOf('/',lastfind) != -1){
+                     argno = togo - 2;
+                     if (togo != 0 && togo != 1){ 
+                     Serial.println(tokens[0]);
+                     Serial.println(tokens[1]);
+                     args[argno] = tosplit.substring(lastfind,tosplit.indexOf('/',lastfind));
+                     Serial.println(String(argno) + " - " + args[argno]);
+                     Serial.println(tokens[0]);
+                     Serial.println(tokens[1]);
+                     }
+                     lastfind = tosplit.indexOf('/',lastfind) + 1;
+                     togo++;
+                     if (togo == 9){
+                        break;
+                     }
                }
+                     argno = togo - 2;
+                     Serial.println(tokens[0]);  // get the last one
+                     Serial.println(tokens[1]);
+                     args[argno] = tosplit.substring(lastfind);
+                     Serial.println(String(argno) + " - " + args[argno]);
+                     Serial.println(tokens[0]);
+                     Serial.println(tokens[1]);
+
+
+
+
+
+//                 char *p = clientline + NULL;
+//                 char *str;
+//                  char *args[8];
+//                int upto = 0;
+//                (strstr(clientline, " HTTP"))[0] = 0;
+// Serial.println(clientline);
+//                while ((str = strtok_r(p, "/", &p)) != NULL) {
+//                      if (upto != 0 && upto != 1){ //skip the first and second
+//                      int  argno = upto - 2; //adjust for skipping the first two
+//                      args[argno] = str;
+//                      Serial.println(String(argno) + " - " + String(str));
+//                      }
+//                      upto++;
+//                      if (upto ==8 + 2) {
+//                         break; // we got our 8 inputs, break out.
+//                      }
+//                }
+                        Serial.println("Reached end");
                if (checkhash(args)) {
                         #if DEBUG_MESSAGES == true
                   debug("TOKEN", -1, "Passed Auth");
@@ -524,15 +565,18 @@ String MakeChallenge() {
 }
 
 String MakeHash(String test) {
+            #if DEBUG_MESSAGES == true
+   debug("HASH", -1, "HASHING " + test);
+   #endif
    char tochar[test.length() + 1];
    for (int i = 0; i < test.length(); i++) {
       tochar[i] = test.charAt(i);
    }
    tochar[test.length()] = NULL;
-         #if DEBUG_MESSAGES == true
-   debug("HASH", -1, "HASHING " + String(tochar));
-   #endif
 
+         #if DEBUG_MESSAGES == true
+   debug("HASH", -1, "HASHING2 " + String(tochar));
+   #endif
    unsigned char* hash = MD5::make_hash(tochar);
    char* md5str = MD5::make_digest(hash, 16);
 
@@ -647,7 +691,8 @@ void showindex(EthernetClient client) {
 }
 
 bool checkhash(String args[8]) {
-   if ((MakeHash(tokens[0] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6] + args[7]) == args[0]) || (MakeHash(tokens[1] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6] + args[7]) == args[0])) {
+
+   if ((MakeHash(tokens[0] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6] + args[7]) == args[0]) || (MakeHash(tokens[1] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6]  + args[7]) == args[0])) {
       return (true);
    } else {
       return (false);
@@ -684,13 +729,13 @@ void httptoggleoutput(String args[8], EthernetClient client) {
 }
 
 void httpschedule(String args[8], EthernetClient client) {
-   for (int x = 0; x < 5; x++) {
+     for (int x = 0; x < 5; x++) {
       if (active[x] == 0) {
          char newactiontime[args[2].length() + 1];
          for (int i = 0; i < args[2].length(); i++) {
             newactiontime[i] = args[2].charAt(i);
          }
-         actionmillis[x] = atoi(newactiontime) + millis();
+         actionmillis[x] = (atoi(newactiontime)*1000) + millis();
          char newaction[args[3].length() + 1];
          for (int i = 0; i < args[3].length(); i++) {
             newaction[i] = args[3].charAt(i);
