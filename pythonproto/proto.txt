@@ -1,0 +1,51 @@
+Request
+
+Start Byte
+1111 1111
+
+Action
+0000 0000 - Keep alive
+0000 0001 - Read Digital
+0000 0002 - Read Analog
+0000 0003 - Write Digital
+0000 0004 - Read DHT
+
+Address
+
+0000 0000 - 
+1111 1111 - 
+
+Value
+0000 0000 -   (1111 1111 no value)
+1111 1111
+
+END Checksum 
+CRC (or just 1010 0101
+
+Null terminator
+0000 0000
+
+
+
+Response
+
+Start Byte
+1111 1111
+
+Action
+0000 0000 - Keep alive
+0000 0001 - Read Digital
+0000 0002 - Read Analog
+0000 0003 - Write Digital
+0000 0004 - Read DHT
+
+Address
+0000 0000 -
+1111 1111 
+
+Value
+0000 0000 -
+1111 1111
+
+End Checksum
+1010 0101
