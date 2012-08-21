@@ -73,8 +73,8 @@ void loop()
 
       boolean started = false;
       byte    action;
-      int     address;
-      int     value;
+      byte     address;
+      byte     value;
       byte    checksum;
       byte    nullterm;
 
@@ -91,104 +91,42 @@ void loop()
         }
 
 
-        bool timeout = true;
-        for (int x=0; x<WAITTIME; x++){
-          if (client.available()){
-            action  = client.read();
-            Serial.print(action);
-            Serial.println("Got action");
-            timeout = false;
-            break; // got our data lets bail  
-          } 
-          else{
-            delay(1) ;
-          }
-        }
-        if (timeout==true){
+         bool timeout = true;
+
+
+         //Get bytes from the packets
+        
+        if (nonblocking_read_byte(client, &action)){
           Serial.println("Timeout after start");
-          client.stop();
           break; // no data to get. bail.
-        }
+        } 
 
 
-        timeout = true;
-        for (int x=0; x<WAITTIME; x++){
-          if (client.available()){
-            address  = client.read();
-            Serial.print(address);
-            Serial.println("Got address");
-            timeout = false;
-            break; // got our data lets bail  
-          } 
-          else{
-            delay(1) ;
-          }
-        }
-        if (timeout==true){
+        if (nonblocking_read_byte(client, &address)){
           Serial.println("Timeout after start");
-          client.stop();
           break; // no data to get. bail.
-        }
+        } 
 
-
-        timeout = true;
-        for (int x=0; x<WAITTIME; x++){
-          if (client.available()){
-            value  = client.read();
-            Serial.print(value);
-            Serial.println("Got value");
-            timeout = false;
-            break; // got our data lets bail  
-          } 
-          else{
-            delay(1) ;
-          }
-        }
-        if (timeout==true){
+        if (nonblocking_read_byte(client, &value)){
           Serial.println("Timeout after start");
-          client.stop();
           break; // no data to get. bail.
-        }
+        } 
 
 
-        timeout = true;
-        for (int x=0; x<WAITTIME; x++){
-          if (client.available()){
-            checksum  = client.read();
-            Serial.print(checksum);
-            Serial.println("checksum");
-            timeout = false;
-            break; // got our data lets bail  
-          } 
-          else{
-            delay(1) ;
-          }
-        }
-        if (timeout==true){
+        if (nonblocking_read_byte(client, &checksum)){
           Serial.println("Timeout after start");
-          client.stop();
           break; // no data to get. bail.
-        }
+        } 
 
 
-        timeout = true;
-        for (int x=0; x<WAITTIME; x++){
-          if (client.available()){
-            nullterm  = client.read();
-            Serial.print(nullterm);
-            Serial.println("nullterminator");
-            timeout = false;
-            break; // got our data lets bail  
-          } 
-          else{
-            delay(1) ;
-          }
-        }
-        if (timeout==true){
+
+        if (nonblocking_read_byte(client, &nullterm)){
           Serial.println("Timeout after start");
-          client.stop();
           break; // no data to get. bail.
-        }      
+        } 
+
+        Serial.println("Got all the bytes - checking now");
+
 
         // Checks go here
 
@@ -232,6 +170,7 @@ void send_packet_keepalive(EthernetClient client, int value){
                    165, //checksum
                     0}; //null term
   client.write(buffer,6); //start byte
+  Serial.println("Sending keepalive");
 //  client.write((byte) 0); //action (keepalive)
 //  client.write((byte) 0); //address
 //  client.write(value); //value
@@ -239,6 +178,20 @@ void send_packet_keepalive(EthernetClient client, int value){
 }
 
 
-
+boolean nonblocking_read_byte(EthernetClient client, byte *packet){
+  for (int x=0; x<WAITTIME; x++){
+    if (client.available()){
+      *packet = client.read();
+      Serial.print((byte) *packet);
+      Serial.println(" - packet");
+      return false;
+    } 
+    else{
+      delay(1) ;
+    }
+  }
+  client.stop();
+  return true;
+}
 
 
