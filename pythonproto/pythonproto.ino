@@ -103,11 +103,11 @@ void loop()
         }
 
 
-         bool timeout = true;
+        bool timeout = true;
 
 
-         //Get bytes from the packets
-        
+        //Get bytes from the packets
+
         if (nonblocking_read_byte(client, &action)){
           Serial.println("Timeout after start");
           break; // no data to get. bail.
@@ -169,9 +169,13 @@ void loop()
           send_packet_analog(client,address);
           break; 
         case 3:  //write digital
+          send_packet_digtal_write(client, address, (bool) value2);
           break;
         case 4: //read DHT
           break; 
+        case 5: //input / output selector
+          send_packet_input_output_selection(client, address, value2);
+          break;
 
         }
       }
@@ -182,41 +186,84 @@ void loop()
 
 
 
-void send_packet_keepalive(EthernetClient client, int value, int value2){
-  byte buffer[7] = {255, //start
-                  (byte) 0, //action
-                  (byte) 0, //address
-                   value, //value
-                   value2, //value
-                   165, //checksum
-                    0}; //null term
+void send_packet_keepalive(EthernetClient client, byte value, byte value2){
+  byte buffer[7] = {
+    255, //start
+    (byte) 0, //action
+    (byte) 0, //address
+    value, //value
+    value2, //value
+    165, //checksum
+    0  }; //null term
   client.write(buffer,7); //write bytes (length must reflect correctly)
   Serial.println("Sending keepalive");
 }
-void send_packet_digtal(EthernetClient client, int address){
-  byte buffer[7] = {255, //start
-                  (byte) 1, //action
-                  (byte) address, //address
-                   0, //value
-                   digitalRead(address), //value
-                   165, //checksum
-                    0}; //null term
+void send_packet_digtal(EthernetClient client, byte address){
+  byte buffer[7] = {
+    255, //start
+    (byte) 1, //action
+    (byte) address, //address
+    0, //value
+    digitalRead(address), //value
+    165, //checksum
+    0  }; //null term
   client.write(buffer,7); //write bytes (length must reflect correctly)
   Serial.println("Sending digital");
 }
 
-void send_packet_analog(EthernetClient client, int address){
-  byte buffer[7] = {255, //start
-                  (byte) 2, //action
-                  (byte) address, //address
-                   highByte(atablelast[address]), //value
-                   lowByte(atablelast[address]), //value
-                   165, //checksum
-                    0}; //null term
+void send_packet_analog(EthernetClient client, byte address){
+  byte buffer[7] = {
+    255, //start
+    (byte) 2, //action
+    (byte) address, //address
+    highByte(atablelast[address]), //value
+    lowByte(atablelast[address]), //value
+    165, //checksum
+    0  }; //null term
   client.write(buffer,7); //write bytes (length must reflect correctly)
   Serial.println("Sending analog");
 }
 
+void send_packet_digtal_write(EthernetClient client, byte address, bool value){
+  digitalWrite(address, value);
+  byte buffer[7] = {
+    255, //start
+    (byte) 1, //action
+    (byte) address, //address
+    0, //value
+    value, //value
+    165, //checksum
+    0  }; //null term
+  client.write(buffer,7); //write bytes (length must reflect correctly)
+  Serial.println("Sending digital write");
+}
+
+
+void send_packet_input_output_selection(EthernetClient client, byte address, byte value){
+  if(value == 0){
+    pinMode(address, OUTPUT);
+  } 
+  else if(value==1) {
+    pinMode(address, INPUT);
+    digitalWrite(address, LOW);
+  } 
+  else if(value==2) {
+    pinMode(address, INPUT);
+    digitalWrite(address, HIGH);
+    Serial.println("Internal pullup turned on");
+  }
+
+  byte buffer[7] = {
+    255, //start
+    (byte) 5, //action
+    (byte) address, //address
+    0, //value
+    value, //value
+    165, //checksum
+    0  }; //null term
+  client.write(buffer,7); //write bytes (length must reflect correctly)
+  Serial.println("Sending output / input selection");
+}
 
 
 boolean nonblocking_read_byte(EthernetClient client, byte *packet){
@@ -255,6 +302,7 @@ void check_analog(){
 }
 
 void cycle(){
-    //check analog and get max
+  //check analog and get max
   check_analog();
 }
+

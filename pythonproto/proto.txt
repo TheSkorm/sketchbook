@@ -9,14 +9,15 @@ Action
 0000 0002 - Read Analog
 0000 0003 - Write Digital
 0000 0004 - Read DHT
+0000 0005 - Set output / input
 
 Address
 
 0000 0000 - 
 1111 1111 - 
 
-Value
-0000 0000   
+Value           
+0000 0000                       For output / input selection 0 = output, 1= input, 2 = input with internal pullup
 1111 1111
 
 0000 0000    
