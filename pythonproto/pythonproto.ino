@@ -19,9 +19,14 @@ byte subnet[] = {
   255, 255, 255, 192 };
 
 // telnet defaults to port 23
-EthernetServer server(23);
+EthernetServer server(58008);
 
-
+// adc - measures highest NOT average
+#define ACYCLETIME 1000 // 1 second highest 
+int next_a_to_check = 0;
+int atable[16];
+int atablelast[16];
+unsigned long alastcycle;
 
 static PROGMEM prog_uint32_t crc_table[16] = {
   0x00000000, 0x1db71064, 0x3b6e20c8, 0x26d930ac,
@@ -59,10 +64,14 @@ void setup()
   server.begin();
   Serial.begin(9600);
   Serial.println("Started");
+  //set the last cycle time
+  alastcycle = millis();
 }
 
 void loop()
 {
+  cycle(); 
+
   // if an incoming client connects, there will be bytes available to read:
   EthernetClient client = server.available();
   if (client) {
@@ -75,8 +84,11 @@ void loop()
       byte    action;
       byte     address;
       byte     value;
+      byte     value2;
       byte    checksum;
       byte    nullterm;
+
+      cycle();
 
       if (client.available()){
         byte input  = client.read();       
@@ -112,6 +124,10 @@ void loop()
           break; // no data to get. bail.
         } 
 
+        if (nonblocking_read_byte(client, &value2)){
+          Serial.println("Timeout after start");
+          break; // no data to get. bail.
+        } 
 
         if (nonblocking_read_byte(client, &checksum)){
           Serial.println("Timeout after start");
@@ -144,11 +160,12 @@ void loop()
 
         switch(action){
         case 0: //keepalive
-          send_packet_keepalive(client, value);
+          send_packet_keepalive(client, value, value2);
           break;
         case 1: //read digital
           break; 
         case 2: //read analog
+          send_packet_analog(client,address);
           break; 
         case 3:  //write digital
           break;
@@ -162,20 +179,30 @@ void loop()
   }
 }
 
-void send_packet_keepalive(EthernetClient client, int value){
-  byte buffer[6] = {255, //start
+void send_packet_keepalive(EthernetClient client, int value, int value2){
+  byte buffer[7] = {255, //start
                   (byte) 0, //action
                   (byte) 0, //address
                    value, //value
+                   value2, //value
                    165, //checksum
                     0}; //null term
-  client.write(buffer,6); //start byte
+  client.write(buffer,7); //write bytes (length must reflect correctly)
   Serial.println("Sending keepalive");
-//  client.write((byte) 0); //action (keepalive)
-//  client.write((byte) 0); //address
-//  client.write(value); //value
-//  client.write(165); // checksum
 }
+
+void send_packet_analog(EthernetClient client, int address){
+  byte buffer[7] = {255, //start
+                  (byte) 2, //action
+                  (byte) address, //address
+                   highByte(atablelast[address]), //value
+                   lowByte(atablelast[address]), //value
+                   165, //checksum
+                    0}; //null term
+  client.write(buffer,7); //write bytes (length must reflect correctly)
+  Serial.println("Sending keepalive");
+}
+
 
 
 boolean nonblocking_read_byte(EthernetClient client, byte *packet){
@@ -194,4 +221,26 @@ boolean nonblocking_read_byte(EthernetClient client, byte *packet){
   return true;
 }
 
+void check_analog(){
+  int value = analogRead(next_a_to_check);
+  if ( atable[next_a_to_check] < value) {
+    atable[next_a_to_check] = value;
+  } 
+  next_a_to_check++;
+  if(millis() - alastcycle > ACYCLETIME)  {
+    Serial.println("Updated analog");
+    alastcycle = millis();
+    for (int i = 0; i < 16; i++) {
+      atablelast[i] = atable[i];
+      atable[i] = 0;
+    }
+  }
+  if (next_a_to_check == 16){
+    next_a_to_check = 0;
+  }
+}
 
+void cycle(){
+    //check analog and get max
+  check_analog();
+}
