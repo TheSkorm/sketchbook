@@ -163,6 +163,7 @@ void loop()
           send_packet_keepalive(client, value, value2);
           break;
         case 1: //read digital
+          send_packet_digtal(client, address);
           break; 
         case 2: //read analog
           send_packet_analog(client,address);
@@ -179,6 +180,8 @@ void loop()
   }
 }
 
+
+
 void send_packet_keepalive(EthernetClient client, int value, int value2){
   byte buffer[7] = {255, //start
                   (byte) 0, //action
@@ -190,6 +193,17 @@ void send_packet_keepalive(EthernetClient client, int value, int value2){
   client.write(buffer,7); //write bytes (length must reflect correctly)
   Serial.println("Sending keepalive");
 }
+void send_packet_digtal(EthernetClient client, int address){
+  byte buffer[7] = {255, //start
+                  (byte) 1, //action
+                  (byte) address, //address
+                   0, //value
+                   digitalRead(address), //value
+                   165, //checksum
+                    0}; //null term
+  client.write(buffer,7); //write bytes (length must reflect correctly)
+  Serial.println("Sending digital");
+}
 
 void send_packet_analog(EthernetClient client, int address){
   byte buffer[7] = {255, //start
@@ -200,7 +214,7 @@ void send_packet_analog(EthernetClient client, int address){
                    165, //checksum
                     0}; //null term
   client.write(buffer,7); //write bytes (length must reflect correctly)
-  Serial.println("Sending keepalive");
+  Serial.println("Sending analog");
 }
 
 
