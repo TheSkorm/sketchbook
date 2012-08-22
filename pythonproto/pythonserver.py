@@ -3,6 +3,7 @@ import struct
 import BaseHTTPServer
 import SocketServer
 import threading
+import time
 
 TCP_IP = '59.167.158.119'
 TCP_PORT = 58008
@@ -36,9 +37,11 @@ class http_handler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 class ArduinoControl(threading.Thread):
     def run(self):
+        self.ready = False
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.connect((TCP_IP, TCP_PORT))
         self.send_keepalive()
+        self.ready = True
         while 1:
             self.action_data(self.recv_data())
     def send_keepalive(self):
@@ -97,6 +100,7 @@ class ArduinoControl(threading.Thread):
 
 
     def recv_read_analog(self,packet):
+        print "A" + str(packet["address"]) + " - " + str((0x100 * packet["value"]) + packet["value2"])
         return
 
     def recv_write_digital(self,packet):
@@ -120,6 +124,22 @@ class ArduinoControl(threading.Thread):
 a = ArduinoControl()
 a.start()
 
-server_address = ('', 8088)
-httpd = BaseHTTPServer.HTTPServer(server_address, http_handler)
-httpd.serve_forever()
+#wait for connection
+while (a.ready == False):
+    time.sleep(0.1)
+
+class httpserverthread(threading.Thread):
+    def run(self):
+        server_address = ('', 8094)
+        httpd = BaseHTTPServer.HTTPServer(server_address, http_handler)
+        httpd.serve_forever()
+
+b = httpserverthread()
+b.start()
+
+while (True):
+    time.sleep(10)
+    for x in range(0,54):
+        a.send_digitalread(x)
+    for x in range(0,16):
+        a.send_analogread(x)

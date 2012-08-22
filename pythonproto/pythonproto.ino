@@ -62,7 +62,7 @@ void setup()
 
   // start listening for clients
   server.begin();
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("Started");
   //set the last cycle time
   alastcycle = millis();
@@ -270,8 +270,6 @@ boolean nonblocking_read_byte(EthernetClient client, byte *packet){
   for (int x=0; x<WAITTIME; x++){
     if (client.available()){
       *packet = client.read();
-      Serial.print((byte) *packet);
-      Serial.println(" - packet");
       return false;
     } 
     else{
@@ -289,7 +287,6 @@ void check_analog(){
   } 
   next_a_to_check++;
   if(millis() - alastcycle > ACYCLETIME)  {
-    Serial.println("Updated analog");
     alastcycle = millis();
     for (int i = 0; i < 16; i++) {
       atablelast[i] = atable[i];
