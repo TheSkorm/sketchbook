@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>
+        </title>
+        <link rel="stylesheet" href="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.css" />
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"> </script>
+        <script src="http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.js"> </script>
+        <script src="http://www.webtoolkit.info/djs/webtoolkit.md5.js"></script>
+                <style>
+.ui-content .ui-controlgroup .ui-slider-switch { width: 19em ;} 
+        </style>
+<script type="text/javascript">
+
+settings={};
+
+
+function getstatus(){
+  $.ajax({
+  url: '/status',
+  dataType: "script",
+  cache: false,
+});
+};
+
+function token(response){
+tokenvalue  = response.token;
+};
+
+
+function startupconfig(){
+    var script = document.createElement('script');
+    script.setAttribute('src','/config.js');
+    document.getElementsByTagName('head')[0].appendChild(script);
+}
+
+function status(response){ 
+for (var pin in response){
+
+
+if ( document.getElementById(pin)){
+ if (settings[pin][0].type == "switch"){
+    if (response[settings[pin][0].read] > 5 ){
+ $(document.getElementById(pin)).buttonMarkup({ theme: "c" });
+ $("#" + pin + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("Off","On"));
+  $(document.getElementById(pin))[0].className = "switch ui-btn-hover-c ui-btn ui-btn-up-c ui-shadow ui-btn-corner-all";
+
+ } else{
+ $(document.getElementById(pin)).buttonMarkup({ theme: "a" });    
+ $("#" + pin + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("On","Off"));
+  $(document.getElementById(pin))[0].className = "switch ui-btn-hover-a ui-btn ui-btn-up-a ui-shadow ui-btn-corner-all";
+ }
+} else if (settings[pin][0].type == "temp"){
+$(document.getElementById(pin))[0].value = response[pin];
+$(document.getElementById(pin)).slider("refresh")
+} else if (settings[pin][0].type == "humid"){
+$(document.getElementById(pin))[0].value = response[pin];
+$(document.getElementById(pin)).slider("refresh")
+}
+
+}
+
+
+}
+};
+
+function refreshdata (){
+getstatus();
+//console.log("Refreshed");
+}
+
+function config(response){
+ for (var setting in response) { 
+    
+    if (response[setting][0].type == "switch"){
+//$('#togglelist').append("<div data-role=\"fieldcontain\"><fieldset data-role=\"controlgroup\"><label for=\"" +setting + "\">"+ response[setting][0].description +"</label><select name=\"" +setting + "\" class=\"switch\" id=\"" +setting + "\" data-theme=\"\" data-role=\"slider\" ><option value=\"off\">Switched Off</option><option value=\"on\">Switched On</option></select></fieldset></div>").trigger("create");
+
+$('#togglelist').append("<a data-role=\"button\"  class=\"switch\" id=\"" +setting + "\"> "+ response[setting][0].description +" - On</a>").trigger("create");
+
+} else if (response[setting][0].type == "temp"){
+
+//$('#togglelist').append("<a data-role=\"button\"  class=\"switch\" id=\"" +setting + "\"> "+ response[setting][0].description +" - On</a>").trigger("create");
+$('#envmonitors').append("<label for=\"slider-fill\">"+ response[setting][0].description +"</label><br><input type=\"number\" data-type=\"range\" name=\"slider\" id=\"" + setting +"\" value=\"0\" min=\"0\" max=\"50\" data-highlight=\"true\" disabled=\"true\" /><br>").trigger("create");
+
+} else if (response[setting][0].type == "humid"){
+
+$('#envmonitors').append("<label for=\"slider-fill\">"+ response[setting][0].description +"</label><br><input type=\"number\" data-type=\"range\" name=\"slider\" id=\"" + setting +"\" value=\"0\" min=\"0\" max=\"100\" data-highlight=\"true\" disabled=\"true\" /><br>").trigger("create");
+
+}
+
+
+
+settings=response;
+
+}
+
+$(function(){
+$( ".switch" ).click(function() {
+    stamp = new Date().getTime();
+  var hash = MD5(tokenvalue + document.getElementById("psk").value + "output" + $(this)[0].id.replace("D","") + stamp ); 
+  $.ajax({
+  url: '/t/' + hash + $(this)[0].id.replace("D","/output/") + "/" + stamp,
+  dataType: "script",
+  cache: true,
+});
+  
+
+});
+
+
+});
+
+}
+
+
+$(document).ready(function() {
+ document.getElementById('psk').value = localStorage.getItem('psk');
+ startupconfig();
+
+ refreshdata ();
+
+});
+
+
+t=setInterval("refreshdata()",3000 + Math.floor((Math.random()*100)+1));
+
+var tokenvalue = "";
+
+function unlock(){
+       stamp = new Date().getTime();
+  var hash = MD5(tokenvalue + document.getElementById("psk").value + "output" + "45" + stamp ); 
+  $.ajax({
+  url: '/t/' + hash + "/output/45" + "/" + stamp,
+  dataType: "script",
+  cache: true,
+});
+}
+        </script>
+    </head>
+   <body>
+        <div data-role="page" id="configpage">
+            <div data-theme="a" data-role="header" data-position="fixed">
+                <h3>
+                    16 Erin Cl
+                </h3>
+                <div data-role="navbar" data-iconpos="left">
+                    <ul>
+                        <li>
+                            <a href="#configpage" data-transition="none"  data-theme="" data-icon="gear" class="ui-btn-active ui-state-persist">
+                                Config
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#Toggles" data-transition="none"  data-theme="" data-icon="" >
+                                Toggles
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#env"  data-transition="none"  data-theme="" data-icon="" >
+                                Environmental
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#secure"  data-transition="none"  data-theme="" data-icon="" >
+                                Secure
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div data-role="content">
+                <div data-role="fieldcontain">
+                    <fieldset data-role="controlgroup">
+                        <label for="textinput1">
+                            Password
+                        </label>
+                        <input id="psk" placeholder="" value="" type="password" onkeyup="localStorage.setItem('psk',document.getElementById('psk').value);"/>
+                    </fieldset>
+                </div>
+            </div>
+        </div>
+        <div data-role="page" id="Toggles">
+            <div data-theme="a" data-role="header" data-position="fixed">
+                <h3>
+                    16 Erin Cl
+                </h3>
+                <div data-role="navbar" data-iconpos="left">
+                    <ul>
+                        <li>
+                            <a href="#configpage" data-transition="none"  data-theme="" data-icon="gear" >
+                                Config
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#Toggles" data-transition="none"  data-theme="" data-icon="" class="ui-btn-active ui-state-persist">
+                                Toggles
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#env"  data-transition="none"  data-theme="" data-icon="" >
+                                Environmental
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#secure"  data-transition="none"  data-theme="" data-icon="" >
+                                Secure
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div id="togglelist" data-role="content">
+
+            </div>
+        </div>
+        <div data-role="page" id="env">
+            <div data-theme="a" data-role="header" data-position="fixed">
+                <h3>
+                    16 Erin Cl
+                </h3>
+                <div data-role="navbar" data-iconpos="left">
+                    <ul>
+                        <li>
+                            <a href="#configpage" data-transition="none"  data-theme="" data-icon="gear" >
+                                Config
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#Toggles" data-transition="none"  data-theme="" data-icon="" >
+                                Toggles
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#env"  data-transition="none"  data-theme="" data-icon="" class="ui-btn-active ui-state-persist">
+                                Environmental
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#secure"  data-transition="none"  data-theme="" data-icon="" >
+                                Secure
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div id="envmonitors" data-role="content">
+            </div>
+        </div>
+        <div data-role="page" id="secure">
+            <div data-theme="a" data-role="header" data-position="fixed">
+                <h3>
+                    16 Erin Cl
+                </h3>
+                <div data-role="navbar" data-iconpos="left">
+                    <ul>
+                        <li>
+                            <a href="#configpage" data-transition="none"  data-theme="" data-icon="gear" >
+                                Config
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#Toggles" data-transition="none"  data-theme="" data-icon="" >
+                                Toggles
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#env"  data-transition="none"  data-theme="" data-icon="" >
+                                Environmental
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#secure"  data-transition="none"  data-theme="" data-icon="" class="ui-btn-active ui-state-persist">
+                                Secure
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div id="secure" data-role="content">
+                <a data-role="button" class="lock" onclick="unlock();">Front Door</a>
+            </div>
+        </div>
+        <script>
+            //App custom javascript
+        </script>
+    </body>
+
+</html>
