@@ -95,12 +95,15 @@ class ArduinoControl(threading.Thread):
         self.ready = False
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.connect((TCP_IP, TCP_PORT))
+        self.s.setblocking(0)
         self.send_keepalive()
         self.ready = True
         self.digitals = {}
         self.analogs = {}
+        self.next_trueup = time.time()+0.8
         self.doorbuttonpin=43
         self.doorlockpin=45
+        self.next_doorcheck = time.time() + 0.1
         self.autolocktime = time.time()
         self.frontlighttimer = False
         self.frontlighttime = time.time()
@@ -109,18 +112,30 @@ class ArduinoControl(threading.Thread):
         self.doorlock_button_laststate = -1
         self.running = True
         while self.running == True:
-            self.action_data(self.recv_data())
-            if self.digital(self.doorlockpin):
-                if time.time() > self.autolocktime:
-                    self.doorlock()
-            if self.frontlighttime:
-                if time.time() > self.frontlighttime:
-                    if self.analog(self.frontlightinput) > 5:
-                        if self.digital(self.frontlightout):
-                            self.digital(self.frontlightout, 0)
-                        else:
-                            self.digital(self.frontlightout, 1)
-                    self.frontlighttime = 0
+            try:
+                self.action_data(self.recv_data())
+            except:
+                if self.digital(self.doorlockpin):
+                    if time.time() > self.autolocktime:
+                        self.doorlock()
+                if self.frontlighttime:
+                    if time.time() > self.frontlighttime:
+                        if self.analog(self.frontlightinput) > 5:
+                            if self.digital(self.frontlightout):
+                                self.digital(self.frontlightout, 0)
+                            else:
+                                self.digital(self.frontlightout, 1)
+                        self.frontlighttime = 0
+                if time.time() > self.next_doorcheck:
+                    self.send_digitalread(self.doorbuttonpin)
+                    self.next_doorcheck = time.time() + 0.1
+                if time.time() > self.next_trueup:
+                    for x in range(0,54):
+                        self.send_digitalread(x)
+                    for x in range(0,16):
+                        self.send_analogread(x)
+                    self.next_trueup = time.time()+0.8
+                    print self.digitals
     def send_keepalive(self):
         message = "\xff\x00\x00\x00\x00\xA5\x00"
         self.s.send(message)
@@ -259,11 +274,7 @@ startup()
 try:
     while (True):
         time.sleep(0.5)
-        for x in range(0,54):
-            controller.send_digitalread(x)
-        for x in range(0,16):
-            controller.send_analogread(x)
-        print controller.digitals
+
 except KeyboardInterrupt:
     controller.running = False
     webserver.httpd.shutdown()
