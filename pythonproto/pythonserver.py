@@ -105,7 +105,6 @@ class ArduinoControl(threading.Thread):
         self.doorlockpin=45
         self.next_doorcheck = time.time() + 0.1
         self.autolocktime = time.time()
-        self.frontlighttimer = False
         self.frontlighttime = time.time()
         self.frontlightinput = 0
         self.frontlightout = 22
@@ -135,7 +134,6 @@ class ArduinoControl(threading.Thread):
                     for x in range(0,16):
                         self.send_analogread(x)
                     self.next_trueup = time.time()+0.8
-                    print self.digitals
     def send_keepalive(self):
         message = "\xff\x00\x00\x00\x00\xA5\x00"
         self.s.send(message)
@@ -239,7 +237,7 @@ class ArduinoControl(threading.Thread):
                 self.digital(self.frontlightout, 0)
             else:
                 self.digital(self.frontlightout, 1)
-            self.frontlighttimer = time.time() + 120 # 2 minutes
+            self.frontlighttime = time.time() + 120 # 2 minutes
 
     def doorlock(self):
         self.digital(self.doorlockpin, 0)
