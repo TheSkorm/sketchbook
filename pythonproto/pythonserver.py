@@ -5,6 +5,9 @@ import SocketServer
 import threading
 import time
 import traceback
+import md5
+import string
+import random
 
 TCP_IP = '59.167.158.119'
 TCP_PORT = 58008
@@ -14,6 +17,7 @@ BUFFER_SIZE=7
 
 class http_handler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_GET(self):
+        self.psk = "test"
         if self.path == "/":
             self.send_response(200)
             self.send_header("Content-type", "text/html")
@@ -32,21 +36,30 @@ class http_handler(BaseHTTPServer.BaseHTTPRequestHandler):
             for x in controller.analogs:
               self.wfile.write("\"A" + str(x) + "\": " + str(controller.analog(x)) + ",");               
             self.wfile.write("});")
-            self.wfile.write("token({\"token\": \"test\"});")
+            self.wfile.write("token({\"token\": \""+token+"\"});")
         elif  "/t" in self.path:
+            print self.path
             self.send_response(200)
             self.send_header("Content-type", "application/javascript")
             self.end_headers()
             self.wfile.write("status({")
             c = self.path.split("/")
-            if c[3] == "output":
-                if c[4] == "45":
-                    controller.doorunlock()
-                else:
-                    if controller.digital(int(c[4])) == 1:
-                        controller.digital(int(c[4]),0)
+            if md5.new(token + self.psk + "".join(c[3:])).hexdigest() == c[2] or md5.new(lasttoken + self.psk + "".join(c[3:])).hexdigest():
+                print "Auth passed"
+                if c[3] == "output":
+                    if c[4] == "45":
+                        controller.doorunlock()
                     else:
-                        controller.digital(int(c[4]),1)
+                        if controller.digital(int(c[4])) == 1:
+                            controller.digital(int(c[4]),0)
+                        else:
+                            controller.digital(int(c[4]),1)
+            else:
+                print "auth failed"
+                self.send_response(403)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
+                self.wfile.write("You suck")
 
 
         elif self.path == "/config.js":
@@ -74,6 +87,7 @@ class http_handler(BaseHTTPServer.BaseHTTPRequestHandler):
    \"A1\" : [{\"description\": \"Light Sensor\", \"type\": \"light\"}],
      });
                 """)
+            self.wfile.write("token({\"token\": \""+token+"\"});")
         elif self.path == "/favicon.ico":
             self.send_response(200)
             self.send_header("Content-type", "image/ico")
@@ -255,6 +269,10 @@ class httpserverthread(threading.Thread):
 def startup():
     global controller
     global webserver
+    global token
+    global lasttoken
+    lasttoken = ""
+    token =  "".join(random.sample(string.ascii_letters,24))
     controller = ArduinoControl()
     controller.start()
     webserver = httpserverthread()
@@ -272,7 +290,9 @@ startup()
 
 try:
     while (True):
-        time.sleep(0.5)
+        time.sleep(5)
+        lasttoken = token
+        token =  "".join(random.sample(string.ascii_letters,24))
 
 except KeyboardInterrupt:
     controller.running = False
