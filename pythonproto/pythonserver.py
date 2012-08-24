@@ -39,14 +39,15 @@ class http_handler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write("status({")
             c = self.path.split("/")
-            print c
             if c[3] == "output":
-                if controller.digital(int(c[4])) == 1:
-                    print "toggle1"
-                    controller.digital(int(c[4]),0)
+                if c[4] == "45":
+                    controller.doorunlock()
                 else:
-                    controller.digital(int(c[4]),1)
-                    print "toggle2"
+                    if controller.digital(int(c[4])) == 1:
+                        controller.digital(int(c[4]),0)
+                    else:
+                        controller.digital(int(c[4]),1)
+
 
         elif self.path == "/config.js":
             self.send_response(200)
