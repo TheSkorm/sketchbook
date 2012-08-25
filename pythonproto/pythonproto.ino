@@ -1,6 +1,14 @@
 #include <SPI.h>
 #include <Ethernet.h>
 #include <avr/pgmspace.h>
+#include "DHT.h"
+
+#define DHTTYPE DHT11
+
+// DHT Config
+DHT dhtin(47, DHTTYPE);
+DHT dhtout(46, DHTTYPE);
+
 
 // network configuration.  gateway and subnet are optional.
 #define WAITTIME 1000
@@ -64,6 +72,8 @@ void setup()
   server.begin();
   Serial.begin(115200);
   Serial.println("Started");
+  pinMode(13, OUTPUT);
+  setup_dht();
   //set the last cycle time
   alastcycle = millis();
 }
@@ -88,13 +98,14 @@ void loop()
       byte    checksum;
       byte    nullterm;
 
+      digitalWrite(13, LOW);
       cycle();
 
       if (client.available()){
+        digitalWrite(13, HIGH);
         byte input  = client.read();       
         if (input == 255 && started==false){
           started = true;
-          Serial.println("Start detected"); 
         } 
         else {
           Serial.println("Bad data, exiting out"); 
@@ -141,7 +152,6 @@ void loop()
           break; // no data to get. bail.
         } 
 
-        Serial.println("Got all the bytes - checking now");
 
 
         // Checks go here
@@ -172,6 +182,7 @@ void loop()
           send_packet_digtal_write(client, address, (bool) value2);
           break;
         case 4: //read DHT
+          send_packet_dht(client,address);
           break; 
         case 5: //input / output selector
           send_packet_input_output_selection(client, address, value2);
@@ -196,7 +207,6 @@ void send_packet_keepalive(EthernetClient client, byte value, byte value2){
     165, //checksum
     0  }; //null term
   client.write(buffer,7); //write bytes (length must reflect correctly)
-  Serial.println("Sending keepalive");
 }
 void send_packet_digtal(EthernetClient client, byte address){
   byte buffer[7] = {
@@ -208,7 +218,6 @@ void send_packet_digtal(EthernetClient client, byte address){
     165, //checksum
     0  }; //null term
   client.write(buffer,7); //write bytes (length must reflect correctly)
-  Serial.println("Sending digital");
 }
 
 void send_packet_analog(EthernetClient client, byte address){
@@ -221,7 +230,6 @@ void send_packet_analog(EthernetClient client, byte address){
     165, //checksum
     0  }; //null term
   client.write(buffer,7); //write bytes (length must reflect correctly)
-  Serial.println("Sending analog");
 }
 
 void send_packet_digtal_write(EthernetClient client, byte address, bool value){
@@ -235,7 +243,33 @@ void send_packet_digtal_write(EthernetClient client, byte address, bool value){
     165, //checksum
     0  }; //null term
   client.write(buffer,7); //write bytes (length must reflect correctly)
-  Serial.println("Sending digital write");
+}
+
+void send_packet_dht(EthernetClient client, byte address){
+  int value = 0;
+  switch(address){
+    case 0: //temp inside
+      value = (int) dhtin.readTemperature();
+      break;
+    case 1: // humid inside
+      value = (int) dhtin.readHumidity();
+      break;
+    case 2: //temp outside
+      value = (int) dhtout.readTemperature();
+      break;
+    case 3: // humid outside
+      value = (int) dhtout.readHumidity();  
+      break;    
+  }
+  byte buffer[7] = {
+    255, //start
+    (byte) 4, //action
+    (byte) address, //address
+    highByte(value), //value
+    lowByte(value), //value
+    165, //checksum
+    0  }; //null term
+  client.write(buffer,7); //write bytes (length must reflect correctly)
 }
 
 
@@ -250,7 +284,6 @@ void send_packet_input_output_selection(EthernetClient client, byte address, byt
   else if(value==2) {
     pinMode(address, INPUT);
     digitalWrite(address, HIGH);
-    Serial.println("Internal pullup turned on");
   }
 
   byte buffer[7] = {
@@ -262,7 +295,6 @@ void send_packet_input_output_selection(EthernetClient client, byte address, byt
     165, //checksum
     0  }; //null term
   client.write(buffer,7); //write bytes (length must reflect correctly)
-  Serial.println("Sending output / input selection");
 }
 
 
@@ -297,6 +329,13 @@ void check_analog(){
     next_a_to_check = 0;
   }
 }
+
+void setup_dht(){
+  dhtin.begin();
+  dhtout.begin();
+}
+
+
 
 void cycle(){
   //check analog and get max

@@ -34,7 +34,11 @@ class http_handler(BaseHTTPServer.BaseHTTPRequestHandler):
             for x in controller.digitals:
               self.wfile.write("\"D" + str(x) + "\": " + str(controller.digital(x)) + ",");  
             for x in controller.analogs:
-              self.wfile.write("\"A" + str(x) + "\": " + str(controller.analog(x)) + ",");               
+              self.wfile.write("\"A" + str(x) + "\": " + str(controller.analog(x)) + ",");
+            self.wfile.write("\"T1\": " + str(controller.dhtdata[0]) + ",");     
+            self.wfile.write("\"T0\": " + str(controller.dhtdata[2]) + ",");      
+            self.wfile.write("\"H1\": " + str(controller.dhtdata[1]) + ",");     
+            self.wfile.write("\"H0\": " + str(controller.dhtdata[3]) + ",");      
             self.wfile.write("});")
             self.wfile.write("token({\"token\": \""+token+"\"});")
         elif  "/t" in self.path:
@@ -115,6 +119,7 @@ class ArduinoControl(threading.Thread):
         self.ready = True
         self.digitals = {}
         self.analogs = {}
+        self.dhtdata = {0:0,1:0,2:0,3:0}
         self.next_trueup = time.time()+0.8
         self.doorbuttonpin=43
         self.doorlockpin=45
@@ -125,6 +130,8 @@ class ArduinoControl(threading.Thread):
         self.frontlightout = 22
         self.doorlock_button_laststate = -1
         self.running = True
+        self.nexttemp = 0
+        self.nexttempread = time.time()+15
         while self.running == True:
             try:
                 self.action_data(self.recv_data())
@@ -149,6 +156,12 @@ class ArduinoControl(threading.Thread):
                     for x in range(0,16):
                         self.send_analogread(x)
                     self.next_trueup = time.time()+0.8
+                if time.time() > self.nexttempread:
+                    self.send_DHT(self.nexttemp)
+                    self.nexttempread = time.time()+15
+                    self.nexttemp = self.nexttemp + 1
+                    if self.nexttemp == 4:
+                        self.nexttemp = 0
     def send_keepalive(self):
         message = "\xff\x00\x00\x00\x00\xA5\x00"
         self.s.send(message)
@@ -163,6 +176,10 @@ class ArduinoControl(threading.Thread):
 
     def send_digitalwrite(self,port,state):
         message = "\xff\x03"+struct.pack("!B",port)+"\x00"+struct.pack("!B",state)+"\xA5\x00"
+        self.s.send(message)
+
+    def send_DHT(self,address):
+        message = "\xff\x04"+struct.pack("!B",address)+"\x00\x00\xA5\x00"
         self.s.send(message)
 
     def send_setoutput(self,port,state):
@@ -221,6 +238,7 @@ class ArduinoControl(threading.Thread):
         return
 
     def recv_read_dht(self,packet):
+        self.dhtdata[packet["address"]] =  (0x100 * packet["value"]) + packet["value2"]
         return
 
     def recv_set_output(self,packet):
