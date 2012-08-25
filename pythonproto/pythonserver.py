@@ -247,7 +247,7 @@ class ArduinoControl(threading.Thread):
     def doorunlock(self):
         self.digital(self.doorlockpin, 1)
         self.autolocktime = time.time() + 10
-        if time.gmtime()[3] < 17  or time.gmtime()[3] < 3:
+        if time.gmtime()[3] > 17  or time.gmtime()[3] > 3:
             if self.analog(self.frontlightinput) < 5:
                 if self.digital(self.frontlightout):
                     self.digital(self.frontlightout, 0)
