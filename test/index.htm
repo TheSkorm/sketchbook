@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html manifest="/cache.manifest">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -42,7 +42,7 @@ for (var pin in response){
 
 if ( document.getElementById(pin)){
  if (settings[pin][0].type == "switch"){
-    if (response[settings[pin][0].read] > 5 ){
+    if (response[settings[pin][0].read] > 9 ){
  $(document.getElementById(pin)).buttonMarkup({ theme: "c" });
  $("#" + pin + " .ui-btn-text").text($(document.getElementById(pin)).text().replace("Off","On"));
   $(document.getElementById(pin))[0].className = "switch ui-btn-hover-c ui-btn ui-btn-up-c ui-shadow ui-btn-corner-all";
@@ -127,6 +127,24 @@ $(document).ready(function() {
 t=setInterval("refreshdata()",3000 + Math.floor((Math.random()*100)+1));
 
 var tokenvalue = "";
+
+
+function unlock(){
+       stamp = new Date().getTime();
+  var hash = MD5(tokenvalue + document.getElementById("psk").value + "output" + "45" + stamp ); 
+  $.ajax({
+  url: 'http://59.167.158.119/t/' + hash + "/output/45" + "/" + stamp,
+  dataType: "script",
+  cache: true,
+});
+   stamp = new Date().getTime();
+  var hash = MD5(tokenvalue + document.getElementById("psk").value + "schedu" + "12" + "0" + "45" +"D" +"45"+stamp);  //99 should be 0
+  $.ajax({   //                       0        1              2      3       4     5     6            7
+  url: 'http://59.167.158.119/t/' + hash +  "/schedu" + "/12" + "/0" + "/45" +"/D" +"/45" + "/" + stamp , 
+  dataType: "script",
+  cache: true,
+});
+}
         </script>
     </head>
     <body>
@@ -138,18 +156,23 @@ var tokenvalue = "";
                 <div data-role="navbar" data-iconpos="left">
                     <ul>
                         <li>
-                            <a href="#configpage"  data-transition="none" data-theme="" data-icon="gear" class="ui-btn-active ui-state-persist">
+                            <a href="#configpage" data-transition="none"  data-theme="" data-icon="gear" class="ui-btn-active ui-state-persist">
                                 Config
                             </a>
                         </li>
                         <li>
-                            <a href="#Toggles"  data-transition="none"  data-theme="" data-icon="">
+                            <a href="#Toggles" data-transition="none"  data-theme="" data-icon="" >
                                 Toggles
                             </a>
                         </li>
                         <li>
-                            <a href="#env"  data-transition="none"  data-theme="" data-icon="">
+                            <a href="#env"  data-transition="none"  data-theme="" data-icon="" >
                                 Environmental
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#secure"  data-transition="none"  data-theme="" data-icon="" >
+                                Secure
                             </a>
                         </li>
                     </ul>
@@ -184,8 +207,13 @@ var tokenvalue = "";
                             </a>
                         </li>
                         <li>
-                            <a href="#env"  data-transition="none"  data-theme="" data-icon="">
+                            <a href="#env"  data-transition="none"  data-theme="" data-icon="" >
                                 Environmental
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#secure"  data-transition="none"  data-theme="" data-icon="" >
+                                Secure
                             </a>
                         </li>
                     </ul>
@@ -217,17 +245,49 @@ var tokenvalue = "";
                                 Environmental
                             </a>
                         </li>
+                        <li>
+                            <a href="#secure"  data-transition="none"  data-theme="" data-icon="" >
+                                Secure
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
             <div id="envmonitors" data-role="content">
-<!-- <label for="slider-fill">Temp Inside:</label><br><input type="range" name="slider" id="T0" value="0" min="0" max="50" data-highlight="true" disabled="true" /><br>
-<label for="slider-fill">Humidity Inside:</label><br>
-<input type="range" name="slider" id="H0" value="0" min="0" max="100" data-highlight="true" disabled="true" /><br>
-<label for="slider-fill">Temp Outside:</label><br>
-<input type="range" name="slider" id="T1" value="0" min="0" max="50" data-highlight="true" disabled="true" /><br>
-<label for="slider-fill">Humidity Outside:</label><br>
-<input type="range" name="slider" id="H1" value="0" min="0" max="100" data-highlight="true" disabled="true" /> <br> -->
+            </div>
+        </div>
+        <div data-role="page" id="secure">
+            <div data-theme="a" data-role="header" data-position="fixed">
+                <h3>
+                    16 Erin Cl
+                </h3>
+                <div data-role="navbar" data-iconpos="left">
+                    <ul>
+                        <li>
+                            <a href="#configpage" data-transition="none"  data-theme="" data-icon="gear" >
+                                Config
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#Toggles" data-transition="none"  data-theme="" data-icon="" >
+                                Toggles
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#env"  data-transition="none"  data-theme="" data-icon="" >
+                                Environmental
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#secure"  data-transition="none"  data-theme="" data-icon="" class="ui-btn-active ui-state-persist">
+                                Secure
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div id="secure" data-role="content">
+                <a data-role="button" class="lock" onclick="unlock();">Front Door</a>
             </div>
         </div>
         <script>

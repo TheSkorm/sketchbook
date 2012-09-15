@@ -184,7 +184,7 @@ void setup() {
       sd.initErrorHalt(); // Code to make the json config file
 
 
-
+// TODO Make config get sent as script MIME
       sd.remove("config.js");
    if (!myFile.open("config.js", O_RDWR | O_CREAT | O_TRUNC)) {
       sd.errorHalt("opening config.js for write failed");

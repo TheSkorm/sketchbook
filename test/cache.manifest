@@ -1,0 +1,12 @@
+CACHE MANIFEST
+CACHE:
+/index.htm
+http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.css
+http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js
+http://code.jquery.com/mobile/1.1.0/jquery.mobile-1.1.0.min.js
+http://www.webtoolkit.info/djs/webtoolkit.md5.js
+http://code.jquery.com/mobile/1.1.0/images/ajax-loader.gif
+http://code.jquery.com/mobile/1.1.0/images/icons-18-white.png
+http://59.167.158.119/config.js
+NETWORK:
+*
