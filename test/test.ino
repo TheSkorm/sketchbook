@@ -101,7 +101,7 @@ void toggle_door(){
          actionpin[y] = DOORLOCKOUTPUT;
          readpinad[y] = 1;
          readpin[y] = DOORLOCKOUTPUT; // just read the state of the IO.
-if ((bool) laststate[2] < 9){
+if ((bool) laststate[0] < 9){
 output_toggle(22);
 
    int y = -1;
@@ -190,17 +190,17 @@ void setup() {
       sd.errorHalt("opening config.js for write failed");
    }
    myFile.println("config({");
-   myFile.println("\"D22\" : [{\"description\": \"Front Outside Light\", \"type\": \"switch\",\"read\": \"A2\"}],");
-   myFile.println("\"D23\" : [{\"description\": \"Kitchen\", \"type\": \"switch\",\"read\": \"A3\"}],");
-   myFile.println("\"D24\" : [{\"description\": \"Dinning Room\", \"type\": \"switch\",\"read\": \"A4\"}],");
-   myFile.println("\"D25\" : [{\"description\": \"Lounge Room 1\", \"type\": \"switch\",\"read\": \"A5\"}],");
-   myFile.println("\"D26\" : [{\"description\": \"Lounge Room 2\", \"type\": \"switch\",\"read\": \"A6\"}],");
-   myFile.println("\"D27\" : [{\"description\": \"Lounge Room Fan\", \"type\": \"switch\",\"read\": \"A7\"}],");
-   myFile.println("\"D28\" : [{\"description\": \"Bedroom 1\", \"type\": \"switch\",\"read\": \"A8\"}],");
-   myFile.println("\"D29\" : [{\"description\": \"Bedroom 2\", \"type\": \"switch\",\"read\": \"A9\"}],");
-   myFile.println("\"D30\" : [{\"description\": \"Bedroom 3\", \"type\": \"switch\",\"read\": \"A10\"}],");
-   myFile.println("\"D31\" : [{\"description\": \"Outside Light 1\", \"type\": \"switch\",\"read\": \"A11\"}],");
-   myFile.println("\"D32\" : [{\"description\": \"Outside Light 2\", \"type\": \"switch\",\"read\": \"A12\"}],");
+   myFile.println("\"D22\" : [{\"description\": \"Front Outside Light\", \"type\": \"switch\",\"read\": \"A0\"}],");
+   myFile.println("\"D23\" : [{\"description\": \"Kitchen\", \"type\": \"switch\",\"read\": \"A1\"}],");
+   myFile.println("\"D24\" : [{\"description\": \"Dinning Room\", \"type\": \"switch\",\"read\": \"A2\"}],");
+   myFile.println("\"D25\" : [{\"description\": \"Lounge Room 1\", \"type\": \"switch\",\"read\": \"A3\"}],");
+   myFile.println("\"D26\" : [{\"description\": \"Lounge Room 2\", \"type\": \"switch\",\"read\": \"A4\"}],");
+   myFile.println("\"D27\" : [{\"description\": \"Lounge Room Fan\", \"type\": \"switch\",\"read\": \"A5\"}],");
+   myFile.println("\"D28\" : [{\"description\": \"Bedroom 1\", \"type\": \"switch\",\"read\": \"A6\"}],");
+   myFile.println("\"D29\" : [{\"description\": \"Bedroom 2\", \"type\": \"switch\",\"read\": \"A7\"}],");
+   myFile.println("\"D30\" : [{\"description\": \"Bedroom 3\", \"type\": \"switch\",\"read\": \"A8\"}],");
+   myFile.println("\"D31\" : [{\"description\": \"Outside Light 1\", \"type\": \"switch\",\"read\": \"A9\"}],");
+   myFile.println("\"D32\" : [{\"description\": \"Outside Light 2\", \"type\": \"switch\",\"read\": \"A10\"}],");
    myFile.println("\"D45\" : [{\"description\": \"Front Door\", \"type\": \"door\"}],");
    myFile.println("\"T0\" : [{\"description\": \"Outside Temp\", \"type\": \"temp\"}],");
    myFile.println("\"T1\" : [{\"description\": \"Inside Temp\", \"type\": \"temp\"}],");
@@ -731,7 +731,7 @@ void httptoggleoutput(String args[8], EthernetClient client) {
 void httpschedule(String args[8], EthernetClient client) {
      for (int x = 0; x < 5; x++) {
       if (active[x] == 0) {
-         char newactiontime[args[2].length() + 1];
+         char newactiontime[args[2].length() + 1]; //TODO this should be a long or some shit
          for (int i = 0; i < args[2].length(); i++) {
             newactiontime[i] = args[2].charAt(i);
          }
