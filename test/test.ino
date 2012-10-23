@@ -19,6 +19,8 @@ String PSK = "";
 unsigned long lastaccheck = 0;
 int maxac[15];
 int laststate[15];
+int currentaccheck =0;
+int accycletimes =0;
 
 /************ TEMP/HUMID STUFF ************/
 //#define DHT11_PIN 6      // ADC0
@@ -26,8 +28,8 @@ int laststate[15];
 unsigned long nexttemp;
 #include "DHT.h"
 #define DHTTYPE DHT11
-DHT dhtin(47, DHTTYPE);
-DHT dhtout(46, DHTTYPE);
+DHT dhtin(46, DHTTYPE);
+DHT dhtout(47, DHTTYPE);
 float hin = 0;
 float tin = 0;
 float hout = 0;
@@ -50,6 +52,7 @@ const int chipSelect = 4;
 #define BUFSIZ 1000
 
 /************ Scheduler STUFF ************/
+unsigned long lastschedcheck;
 unsigned long actionmillis[5]; // time to perform action  TODO Turn this into struct
 bool action[5]; // 0/1 on/off
 bool active[5]; // 0/1 enabled
@@ -70,6 +73,7 @@ void checkdoor(){
       debug("LCK",0,"Door lock toggled");
    }
 }
+
 //changes door state
 void toggle_door(){
          debug("LCK",0,"Door lock toggled2");
@@ -95,40 +99,13 @@ void toggle_door(){
       if (y == -1){ // if all else fails overwrite 0
          y = 0;
       }
-         actionmillis[y] =  millis() + 12000; //set the door to unlock for 12 seconds
+
+         actionmillis[y] =  millis() + 2000; //set the door to unlock for 12 seconds
          active[y] = true;
          action[y] = false;
          actionpin[y] = DOORLOCKOUTPUT;
          readpinad[y] = 1;
          readpin[y] = DOORLOCKOUTPUT; // just read the state of the IO.
-if ((bool) laststate[0] < 9){
-output_toggle(22);
-
-   int y = -1;
-     for (int x = 0; x < 5; x++) {
-         if (active[x] == 1) {
-            if (actionpin[x] == 22){  // check for existing light sched
-               y = x;
-            }
-         }
-      }
-      if (y == -1)
-      {
-           for (int x = 0; x < 5; x++) {
-            if (active[x] == 0) {
-             y = x;   //find empty sched
-             break;
-             }
-      }
-   }
-         actionmillis[y] =  millis() + 60000; //set the door to unlock for 12 seconds
-         active[y] = true;
-         action[y] = false;
-         actionpin[y] = 22;
-         readpinad[y] = 0;
-         readpin[y] = 2; // just read the state of the IO.
-
-}
 
 }
 
@@ -193,14 +170,14 @@ void setup() {
    myFile.println("\"D22\" : [{\"description\": \"Front Outside Light\", \"type\": \"switch\",\"read\": \"A0\"}],");
    myFile.println("\"D23\" : [{\"description\": \"Kitchen\", \"type\": \"switch\",\"read\": \"A1\"}],");
    myFile.println("\"D24\" : [{\"description\": \"Dinning Room\", \"type\": \"switch\",\"read\": \"A2\"}],");
-   myFile.println("\"D25\" : [{\"description\": \"Lounge Room 1\", \"type\": \"switch\",\"read\": \"A3\"}],");
-   myFile.println("\"D26\" : [{\"description\": \"Lounge Room 2\", \"type\": \"switch\",\"read\": \"A4\"}],");
+   myFile.println("\"D25\" : [{\"description\": \"Lounge Room 2\", \"type\": \"switch\",\"read\": \"A3\"}],");
+   myFile.println("\"D26\" : [{\"description\": \"Lounge Room 1\", \"type\": \"switch\",\"read\": \"A4\"}],");
    myFile.println("\"D27\" : [{\"description\": \"Lounge Room Fan\", \"type\": \"switch\",\"read\": \"A5\"}],");
    myFile.println("\"D28\" : [{\"description\": \"Bedroom 1\", \"type\": \"switch\",\"read\": \"A6\"}],");
    myFile.println("\"D29\" : [{\"description\": \"Bedroom 2\", \"type\": \"switch\",\"read\": \"A7\"}],");
    myFile.println("\"D30\" : [{\"description\": \"Bedroom 3\", \"type\": \"switch\",\"read\": \"A8\"}],");
-   myFile.println("\"D31\" : [{\"description\": \"Outside Light 1\", \"type\": \"switch\",\"read\": \"A9\"}],");
-   myFile.println("\"D32\" : [{\"description\": \"Outside Light 2\", \"type\": \"switch\",\"read\": \"A10\"}],");
+   myFile.println("\"D32\" : [{\"description\": \"Bedroom 1 Fan\", \"type\": \"switch\",\"read\": \"A10\"}],");
+   myFile.println("\"D31\" : [{\"description\": \"Bedroom 2 Fan\", \"type\": \"switch\",\"read\": \"A9\"}],");
    myFile.println("\"D45\" : [{\"description\": \"Front Door\", \"type\": \"door\"}],");
    myFile.println("\"T0\" : [{\"description\": \"Outside Temp\", \"type\": \"temp\"}],");
    myFile.println("\"T1\" : [{\"description\": \"Inside Temp\", \"type\": \"temp\"}],");
@@ -226,17 +203,23 @@ void loop() {
    if (currentMillis - lastkeychange > 10000) {
       lastkeychange = currentMillis;
       refreshtoken();
-     // updatetemp(); //update temp takes time. Maybe check one sensor ever 10 seconds rather than both
+      updatetemp(); //update temp takes time. Maybe check one sensor ever 10 seconds rather than both
 
    }
 
-   if (currentMillis - lastaccheck > 1000) { //reset AC and check the scheduler
-      resetac(currentMillis);
+   if (currentMillis - lastschedcheck > 50) { // check the scheduler
       checksched(currentMillis);
-
+   }
+   
+if (currentMillis - lastaccheck > 500) { //reset AC 
+   resetac(currentMillis);
    }
 
-   checkac();
+   checkac(currentaccheck);
+   accycletimes = accycletimes +1;
+   currentaccheck = currentaccheck + 1;
+   if (currentaccheck > 14)
+      currentaccheck =0;
 
    EthernetClient client = server.available();
 
@@ -625,11 +608,12 @@ void sendstatus(EthernetClient client) {
 void updatetemp() {
    hin = dhtin.readHumidity();
    tin = dhtin.readTemperature();
-   hout = dhtout.readHumidity();
-   tout = dhtout.readTemperature();
+  // hout = dhtout.readHumidity();
+  // tout = dhtout.readTemperature();
 }
 
 void checksched(unsigned long currentMillis) {
+   lastschedcheck = currentMillis;
    for (int i = 0; i < 5; i++) { // this can be a funciotn - scheduler
       if (active[i]) {
          if (currentMillis > actionmillis[i]) {
@@ -664,14 +648,12 @@ void resetac(unsigned long currentMillis) {
    }
 }
 
-void checkac() {
-   for (int i = 0; i < 15; i++) {
-      int accurrent = analogRead(i);
-      if (accurrent > maxac[i]) {
-         maxac[i] = accurrent;
+void checkac(int pin) {
+      int accurrent = analogRead(pin);
+      if (accurrent > maxac[pin]) {
+         maxac[pin] = accurrent;
       }
    }
-}
 
 void showindex(EthernetClient client) {
    client.println("HTTP/1.1 200 OK");
