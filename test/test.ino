@@ -1,4 +1,4 @@
-#define DEBUG_MESSAGES  true
+#define DEBUG_MESSAGES  false
 #include "header.h"
 #include <SdFat.h>
 #include <Ethernet.h>
@@ -70,13 +70,17 @@ void checkdoor(){
   if (lastdoor != reading){
       lastdoor = reading;
       toggle_door(); 
+         #if DEBUG_MESSAGES == true
       debug("LCK",0,"Door lock toggled");
+      #endif
    }
 }
 
 //changes door state
 void toggle_door(){
+      #if DEBUG_MESSAGES == true
          debug("LCK",0,"Door lock toggled2");
+         #endif
    digitalWrite(DOORLOCKOUTPUT, HIGH);
  //  int x = 0;
    int y = -1;
@@ -142,8 +146,8 @@ void setup() {
 
 
    lastkeychange = millis();
+      #if DEBUG_MESSAGES == true
    Serial.begin(57600);
-   #if DEBUG_MESSAGES == true
    debug("SERIAL", -1, "STARTED");
    #endif
    randomSeed(analogRead(0)); //randommize the ardiuno generotor
@@ -200,7 +204,7 @@ void loop() {
       #if DEBUG_MESSAGES == true
     //  debug("LOOP", -1, String(currentMillis));
       #endif
-   if (currentMillis - lastkeychange > 10000) {
+   if (currentMillis - lastkeychange > 60000) {
       lastkeychange = currentMillis;
       refreshtoken();
       updatetemp(); //update temp takes time. Maybe check one sensor ever 10 seconds rather than both
@@ -221,7 +225,7 @@ void loop() {
 
       // reset the input buffer
       index = 0;
-      unsigned long maxtime = millis() + 5000;
+      unsigned long maxtime = millis() + 500;
       while (client.connected()) {
          if (maxtime < millis())
             break;
@@ -343,20 +347,24 @@ void loop() {
          }
       }
 
+
+      // give the web browser time to receive the data
+      delay(2);
+      client.stop();
+   }
+
 if (currentMillis - lastaccheck > 500) { //reset AC 
    resetac(currentMillis);
    }
 
    checkac(currentaccheck);
+
    accycletimes = accycletimes +1;
    currentaccheck = currentaccheck + 1;
    if (currentaccheck > 14)
       currentaccheck =0;
-   
-      // give the web browser time to receive the data
-      delay(2);
-      client.stop();
-   }
+
+
 
 }
       #if DEBUG_MESSAGES == true
@@ -587,23 +595,23 @@ void sendstatus(EthernetClient client) {
    client.println("HTTP/1.1 200 OK");
    client.println("Content-Type: application/javascript");
    client.println();
-   client.println("status({");
+   client.print("status({");
    for (int i = 22; i < 42; i++) {
-      client.println("\"D" + String(i) + "\":" + String(digitalRead(i)) + ",");
+      client.print("\"D" + String(i) + "\":" + String(digitalRead(i)) + ",");
    }
    for (int i = 0; i < 15; i++) {
-      client.println("\"A" + String(i) + "\":" + String(laststate[i]) + ",");
+      client.print("\"A" + String(i) + "\":" + String(laststate[i]) + ",");
    }
    client.print("\"T0\":");
    client.print(tin);
-   client.print(",\n\"T1\":");
+   client.print(",\"T1\":");
    client.print(tout);
-   client.print(",\n\"H0\":");
+   client.print(",\"H0\":");
    client.print(hin);
-   client.print(",\n\"H1\":");
+   client.print(",\"H1\":");
    client.print(hout);
-   client.println("});");
-   client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
+   client.print("});");
+   client.print("token({\"token\": \"" + tokens[currenttoken] + "\"});");
 
 }
 
