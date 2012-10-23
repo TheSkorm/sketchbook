@@ -211,15 +211,7 @@ void loop() {
       checksched(currentMillis);
    }
    
-if (currentMillis - lastaccheck > 500) { //reset AC 
-   resetac(currentMillis);
-   }
 
-   checkac(currentaccheck);
-   accycletimes = accycletimes +1;
-   currentaccheck = currentaccheck + 1;
-   if (currentaccheck > 14)
-      currentaccheck =0;
 
    EthernetClient client = server.available();
 
@@ -351,6 +343,16 @@ if (currentMillis - lastaccheck > 500) { //reset AC
          }
       }
 
+if (currentMillis - lastaccheck > 500) { //reset AC 
+   resetac(currentMillis);
+   }
+
+   checkac(currentaccheck);
+   accycletimes = accycletimes +1;
+   currentaccheck = currentaccheck + 1;
+   if (currentaccheck > 14)
+      currentaccheck =0;
+   
       // give the web browser time to receive the data
       delay(2);
       client.stop();
@@ -642,9 +644,12 @@ void checksched(unsigned long currentMillis) {
 
 void resetac(unsigned long currentMillis) {
    lastaccheck = currentMillis;
+   if (accycletimes > 200){
+   accycletimes = 0;
    for (int i = 0; i < 15; i++) {
       laststate[i] = maxac[i];
       maxac[i] = 0;
+   }
    }
 }
 
