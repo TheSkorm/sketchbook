@@ -1,4 +1,4 @@
-#define DEBUG_MESSAGES  true
+#define DEBUG_MESSAGES  false
 #include "header.h"
 #include <SdFat.h>
 #include <Ethernet.h>
@@ -163,21 +163,6 @@ void setup() {
 
 
 
-
-   if (!sd.init(SPI_HALF_SPEED, chipSelect))
-      sd.initErrorHalt(); // Code to make the json config file
-
-   sd.remove("password");
-   if (!myFile.open("password", O_RDWR | O_CREAT | O_TRUNC)) {
-      sd.errorHalt("opening config.js for write failed");
-   }
-   myFile.println("mwheeler,password");
-   myFile.println("mwheelerandroid,password");
-   myFile.println("rusty,test");
-   myFile.close();
-
-
-
 // TODO Make config get sent as script MIME
       sd.remove("config.js");
    if (!myFile.open("config.js", O_RDWR | O_CREAT | O_TRUNC)) {
@@ -218,7 +203,7 @@ void loop() {
       #endif
    if (currentMillis - lasttempcheck > 60000) {
       lasttempcheck = currentMillis;
-      updatetemp(); //update temp takes time. Maybe check one sensor ever 10 seconds rather than both
+    //  updatetemp(); //update temp takes time. Maybe check one sensor ever 10 seconds rather than both
 
    }
 
