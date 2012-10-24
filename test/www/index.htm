@@ -18,10 +18,11 @@ settings={};
 
 
 function getstatus(){
+     stamp = new Date().getTime();
   $.ajax({
-  url: 'http://59.167.158.119/status',
+  url: 'http://59.167.158.119/status/'+stamp + "/" + document.getElementById("username").value ,
   dataType: "script",
-  cache: false,
+  cache: true,
 });
 };
 
@@ -98,15 +99,17 @@ settings=response;
 
 $(function(){
 $( ".switch" ).click(function() {
+    console.log(tokenvalue);
+
     stamp = new Date().getTime();
-  var hash = MD5(tokenvalue + document.getElementById("psk").value + "output" + $(this)[0].id.replace("D","") + stamp ); 
+  var hash = MD5( document.getElementById("psk").value + tokenvalue  ); 
   $.ajax({
-  url: 'http://59.167.158.119/t/' + hash + $(this)[0].id.replace("D","/output/") + "/" + stamp,
+  url: 'http://59.167.158.119/t/' + hash + "/" + document.getElementById("username").value + $(this)[0].id.replace("D","/output/") + "/" +stamp ,
   dataType: "script",
   cache: true,
 });
-  
-
+    tokenvalue = tokenvalue +1;
+console.log(tokenvalue);
 });
 
 
@@ -117,6 +120,7 @@ $( ".switch" ).click(function() {
 
 $(document).ready(function() {
  document.getElementById('psk').value = localStorage.getItem('psk');
+  document.getElementById('username').value = localStorage.getItem('username');
  startupconfig();
 
  refreshdata ();
@@ -131,19 +135,21 @@ var tokenvalue = "";
 
 function unlock(){
        stamp = new Date().getTime();
-  var hash = MD5(tokenvalue + document.getElementById("psk").value + "output" + "45" + stamp ); 
+   var hash = MD5( document.getElementById("psk").value + tokenvalue  );  
   $.ajax({
-  url: 'http://59.167.158.119/t/' + hash + "/output/45" + "/" + stamp,
+  url: 'http://59.167.158.119/t/' + hash + "/" + document.getElementById("username").value +  "/output/45" + "/" + stamp,
   dataType: "script",
   cache: true,
 });
+  tokenvalue = tokenvalue +1;
    stamp = new Date().getTime();
-  var hash = MD5(tokenvalue + document.getElementById("psk").value + "schedu" + "12" + "0" + "45" +"D" +"45"+stamp);  //99 should be 0
+   var hash = MD5( document.getElementById("psk").value + tokenvalue  );  
   $.ajax({   //                       0        1              2      3       4     5     6            7
-  url: 'http://59.167.158.119/t/' + hash +  "/schedu" + "/12" + "/0" + "/45" +"/D" +"/45" + "/" + stamp , 
+  url: 'http://59.167.158.119/t/' + hash + "/" + document.getElementById("username").value +  "/schedu" + "/12" + "/0" + "/45" +"/D" +"/45" + "/" + stamp , 
   dataType: "script",
   cache: true,
 });
+    tokenvalue = tokenvalue +1;
 }
         </script>
     </head>
@@ -181,6 +187,11 @@ function unlock(){
             <div data-role="content">
                 <div data-role="fieldcontain">
                     <fieldset data-role="controlgroup">
+                        <label for="textinput2">
+                            Username
+                        </label>
+                        <input id="username" placeholder="" value="" onkeyup="localStorage.setItem('username',document.getElementById('username').value);"/>
+                         </fieldset><fieldset data-role="controlgroup">
                         <label for="textinput1">
                             Password
                         </label>

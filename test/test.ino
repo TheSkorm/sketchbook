@@ -1,4 +1,4 @@
-#define DEBUG_MESSAGES  true
+#define DEBUG_MESSAGES  false
 #include "header.h"
 #include <SdFat.h>
 #include <Ethernet.h>
@@ -14,7 +14,7 @@
 long CurrentToken[2] ;
 String Usernames[2] ;
 String Passwords[2] ;
-
+String CurrentHash[2];
 
 
 /************ AC stuff ************/
@@ -143,7 +143,10 @@ void toggle_door(){
 }
 */
 void setup() {
-
+      #if DEBUG_MESSAGES == true
+   Serial.begin(57600);
+   debug("SERIAL", -1, "STARTED");
+   #endif
 
 /* TODO make this read a file */
 Usernames[0] = "mwheeler";
@@ -152,14 +155,13 @@ Passwords[0] = "test1";
 Passwords[1] = "test2";
 CurrentToken[0] =  random(300000); //todo automate
 CurrentToken[1] =  random(300000); //todo automate
+MakeHash(0);
+MakeHash(1);
 
 
 
     lasttempcheck = millis();
-      #if DEBUG_MESSAGES == true
-   Serial.begin(57600);
-   debug("SERIAL", -1, "STARTED");
-   #endif
+
    randomSeed(analogRead(0)); //randommize the ardiuno generotor
   /*  setuppsk(); */
    setup_pins();
@@ -270,12 +272,8 @@ void loop() {
                while (tosplit.indexOf('/',lastfind) != -1){
                      argno = togo - 2;
                      if (togo != 0 && togo != 1){ 
-                    /*  Serial.println(tokens[0]);
-                     Serial.println(tokens[1]); */
-                     args[argno] = tosplit.substring(lastfind,tosplit.indexOf('/',lastfind));
-               /*      Serial.println(tokens[0]);
-                     Serial.println(tokens[1]);
-                     */
+                        args[argno] = tosplit.substring(lastfind,tosplit.indexOf('/',lastfind));
+
                      }
                      lastfind = tosplit.indexOf('/',lastfind) + 1;
                      togo++;
@@ -284,45 +282,20 @@ void loop() {
                      }
                }
                      argno = togo - 2;
-                /*     Serial.println(tokens[0]);  // get the last one
-                     Serial.println(tokens[1]); */
-                /*     Serial.println(String(argno) + " - " + args[argno]);
-                     Serial.println(tokens[0]);
-                     Serial.println(tokens[1]); */
-
-
-
-
-
-//                 char *p = clientline + NULL;
-//                 char *str;
-//                  char *args[8];
-//                int upto = 0;
-//                (strstr(clientline, " HTTP"))[0] = 0;
-// Serial.println(clientline);
-//                while ((str = strtok_r(p, "/", &p)) != NULL) {
-//                      if (upto != 0 && upto != 1){ //skip the first and second
-//                      int  argno = upto - 2; //adjust for skipping the first two
-//                      args[argno] = str;
-//                      Serial.println(String(argno) + " - " + String(str));
-//                      }
-//                      upto++;
-//                      if (upto ==8 + 2) {
-//                         break; // we got our 8 inputs, break out.
-//                      }
-//                }
+  
                if (checkhash(args)) {
                         #if DEBUG_MESSAGES == true
                   debug("TOKEN", -1, "Passed Auth");
                   #endif
 
-                  if (args[1] == "output") {
+                  if (args[2] == "output") {
                      httptoggleoutput(args, client);
 
-                  } else if (args[1] == "schedu") {
+                  } else if (args[2] == "schedu") {
                      httpschedule(args, client);
                   }
-
+                  CurrentToken[finduserid(args[1])] = CurrentToken[finduserid(args[1])]+1; 
+                  MakeHash(finduserid(args[1]));
                } else {
                   http403(client);
                }
@@ -350,7 +323,7 @@ void loop() {
 
 
       // give the web browser time to receive the data
-      delay(2);
+     // delay(1);
       client.stop();
    }
 
@@ -534,31 +507,10 @@ void ListFiles(EthernetClient client, uint8_t flags) {
    client.println("</ul>");
 }
 
-String MakeChallenge() {
-         #if DEBUG_MESSAGES == true
-   debug("CHALLENGE", -1, "GENERATING CHALLENGE");
-   #endif
-   char challenge[17];
-   for (int i = 0; i <= 15; i++) {
-      int randomnumber = random(1, 62);
-      if (randomnumber < 26) {
-         challenge[i] = char(int(65) + randomnumber);
-      } else if (randomnumber >= 26 & randomnumber < 52) {
-         challenge[i] = char(int(97) + randomnumber - 26);
-      } else {
-         challenge[i] = char(int(48) + randomnumber - 52);
-      }
 
-   }
-   challenge[16] = 0x00; //Add null terminator to string
-         #if DEBUG_MESSAGES == true
-   debug("CHALLENGE", -1, challenge);
-   #endif
-   return (String(challenge));
-}
-
-String MakeHash(String test) {
-            #if DEBUG_MESSAGES == true
+void MakeHash(int uid) {
+   String test = String(Passwords[uid]) + String(CurrentToken[uid]);
+   #if DEBUG_MESSAGES == true
    debug("HASH", -1, "HASHING " + test);
    #endif
    char tochar[test.length() + 1];
@@ -579,7 +531,7 @@ String MakeHash(String test) {
          #if DEBUG_MESSAGES == true
    debug("HASH", -1, returnstring);
    #endif
-   return (returnstring);
+   CurrentHash[uid] = returnstring;
 }
 
 
@@ -606,7 +558,7 @@ void sendstatus(EthernetClient client, String username) {
    client.print("});");
    int uid = finduserid(username);
    if (uid >= 0){
-   client.print("token({\"token\": \"" +  String(CurrentToken[uid]) + "\"});");
+   client.print("token({\"token\": " +  String(CurrentToken[uid]) + "});");
 }
 }
 
@@ -681,6 +633,14 @@ void showindex(EthernetClient client) {
 }
 
 bool checkhash(String args[8]) {
+int uid = finduserid(args[1]);
+if(uid >= 0 ){
+if (CurrentHash[uid] == args[0]){
+
+return true;
+}
+}
+
 /*
    if ((MakeHash(tokens[0] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6] + args[7]) == args[0]) || (MakeHash(tokens[1] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6]  + args[7]) == args[0])) {
       return (true);
@@ -693,13 +653,13 @@ bool checkhash(String args[8]) {
 
 void httptoggleoutput(String args[8], EthernetClient client) {
    char name[args[2].length() + 1];
-   for (int i = 0; i < args[2].length(); i++) {
-      name[i] = args[2].charAt(i);
+   for (int i = 0; i < args[3].length(); i++) {
+      name[i] = args[3].charAt(i);
    }
    int output = atoi(name);
 
    output_toggle(output);
-   delay(5);
+   delay(3);
    unsigned long lastaccheck = millis();
    for (int i = 0; i < 15; i++) {
       maxac[i] = 0;
@@ -722,35 +682,35 @@ void httptoggleoutput(String args[8], EthernetClient client) {
 void httpschedule(String args[8], EthernetClient client) {
      for (int x = 0; x < 5; x++) {
       if (active[x] == 0) {
-         char newactiontime[args[2].length() + 1]; //TODO this should be a long or some shit
-         for (int i = 0; i < args[2].length(); i++) {
-            newactiontime[i] = args[2].charAt(i);
+         char newactiontime[args[3].length() + 1]; //TODO this should be a long or some shit
+         for (int i = 0; i < args[3].length(); i++) {
+            newactiontime[i] = args[3].charAt(i);
          }
          actionmillis[x] = (atoi(newactiontime)*1000) + millis();
-         char newaction[args[3].length() + 1];
-         for (int i = 0; i < args[3].length(); i++) {
-            newaction[i] = args[3].charAt(i);
+         char newaction[args[4].length() + 1];
+         for (int i = 0; i < args[4].length(); i++) {
+            newaction[i] = args[4].charAt(i);
          }
          if (atoi(newaction) > 0) {
             action[x] = true;
          } else {
             action[x] = false;
          };
-         char newactionpin[args[4].length() + 1];
-         for (int i = 0; i < args[4].length(); i++) {
-            newactionpin[i] = args[4].charAt(i);
+         char newactionpin[args[5].length() + 1];
+         for (int i = 0; i < args[5].length(); i++) {
+            newactionpin[i] = args[5].charAt(i);
          }
          actionpin[x] = atoi(newactionpin);
 
-         if (args[5] == "A") {
+         if (args[6] == "A") {
             readpinad[x] = false;
          } else {
             readpinad[x] = true;
          }
 
-         char newreadpin[args[6].length() + 1];
-         for (int i = 0; i < args[6].length(); i++) {
-            newreadpin[i] = args[6].charAt(i);
+         char newreadpin[args[7].length() + 1];
+         for (int i = 0; i < args[7].length(); i++) {
+            newreadpin[i] = args[7].charAt(i);
          }
          readpin[x] = atoi(newreadpin);
          active[x] = true;
