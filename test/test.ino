@@ -174,14 +174,14 @@ void setup() {
    myFile.println("\"D22\" : [{\"description\": \"Front Outside Light\", \"type\": \"switch\",\"read\": \"A0\"}],");
    myFile.println("\"D23\" : [{\"description\": \"Kitchen\", \"type\": \"switch\",\"read\": \"A1\"}],");
    myFile.println("\"D24\" : [{\"description\": \"Dinning Room\", \"type\": \"switch\",\"read\": \"A2\"}],");
-   myFile.println("\"D25\" : [{\"description\": \"Lounge Room 2\", \"type\": \"switch\",\"read\": \"A3\"}],");
    myFile.println("\"D26\" : [{\"description\": \"Lounge Room 1\", \"type\": \"switch\",\"read\": \"A4\"}],");
+   myFile.println("\"D25\" : [{\"description\": \"Lounge Room 2\", \"type\": \"switch\",\"read\": \"A3\"}],");
    myFile.println("\"D27\" : [{\"description\": \"Lounge Room Fan\", \"type\": \"switch\",\"read\": \"A5\"}],");
    myFile.println("\"D28\" : [{\"description\": \"Bedroom 1\", \"type\": \"switch\",\"read\": \"A6\"}],");
-   myFile.println("\"D29\" : [{\"description\": \"Bedroom 2\", \"type\": \"switch\",\"read\": \"A7\"}],");
-   myFile.println("\"D30\" : [{\"description\": \"Bedroom 3\", \"type\": \"switch\",\"read\": \"A8\"}],");
    myFile.println("\"D32\" : [{\"description\": \"Bedroom 1 Fan\", \"type\": \"switch\",\"read\": \"A10\"}],");
+   myFile.println("\"D29\" : [{\"description\": \"Bedroom 2\", \"type\": \"switch\",\"read\": \"A7\"}],");
    myFile.println("\"D31\" : [{\"description\": \"Bedroom 2 Fan\", \"type\": \"switch\",\"read\": \"A9\"}],");
+   myFile.println("\"D30\" : [{\"description\": \"Bedroom 3\", \"type\": \"switch\",\"read\": \"A8\"}],");
    myFile.println("\"D45\" : [{\"description\": \"Front Door\", \"type\": \"door\"}],");
    myFile.println("\"T0\" : [{\"description\": \"Outside Temp\", \"type\": \"temp\"}],");
    myFile.println("\"T1\" : [{\"description\": \"Inside Temp\", \"type\": \"temp\"}],");
@@ -596,9 +596,9 @@ void sendstatus(EthernetClient client) {
    client.println("Content-Type: application/javascript");
    client.println();
    client.print("status({");
-   for (int i = 22; i < 42; i++) {
+  /* for (int i = 22; i < 42; i++) {
       client.print("\"D" + String(i) + "\":" + String(digitalRead(i)) + ",");
-   }
+   }*/
    for (int i = 0; i < 15; i++) {
       client.print("\"A" + String(i) + "\":" + String(laststate[i]) + ",");
    }
