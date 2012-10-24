@@ -1,4 +1,4 @@
-#define DEBUG_MESSAGES  false
+#define DEBUG_MESSAGES  true
 #include "header.h"
 #include <SdFat.h>
 #include <Ethernet.h>
@@ -11,11 +11,11 @@
 
 /************ENCRYPTION STUFF ************/
 
-long CurrentToken[2] ;
-String Usernames[2] ;
-String Passwords[2] ;
-String CurrentHash[2];
-
+long CurrentToken[10] ;
+String Usernames[10] ;
+String Passwords[10] ;
+String CurrentHash[10];
+int numberofusers;
 
 /************ AC stuff ************/
 unsigned long lastaccheck = 0;
@@ -115,7 +115,7 @@ void toggle_door(){
 
 }
 
-/* void setuppsk() {
+ void setuppsk() {
    if (!sd.init(SPI_HALF_SPEED, chipSelect))
       sd.initErrorHalt(); // Code to make the json config file
    if (!file.open("password", O_READ)) {
@@ -125,45 +125,37 @@ void toggle_door(){
    }
 
    int16_t c;
-   String pass = "";
-   int b = 0;
+   String data = "";
    while ((c = file.read()) > 0) {
       if ((char) c != 0x0A && (char) c != 0x0D) { //skip new lines
-         pass = String(pass + (char) c);
+         data = String(data + (char) c);
       } else {
-         break;
+         if (data.length() > 4) {
+         Usernames[numberofusers] = data.substring(0,data.indexOf(","));
+         Passwords[numberofusers] = data.substring(data.indexOf(",")+1,data.length());
+         CurrentToken[numberofusers] =  random(300000); 
+         MakeHash(numberofusers);
+         data = "";
+         numberofusers = numberofusers + 1;
+      }
       }
    }
    file.close();
-   PSK = pass; // TODO multi PSKs read off SD card or something
-         #if DEBUG_MESSAGES == true
-   debug("PSK", -1, "password is " + PSK);
-   #endif
-
+ numberofusers -1;
 }
-*/
+
 void setup() {
       #if DEBUG_MESSAGES == true
    Serial.begin(57600);
    debug("SERIAL", -1, "STARTED");
    #endif
 
-/* TODO make this read a file */
-Usernames[0] = "mwheeler";
-Usernames[1] = "rusty";
-Passwords[0] = "test1";
-Passwords[1] = "test2";
-CurrentToken[0] =  random(300000); //todo automate
-CurrentToken[1] =  random(300000); //todo automate
-MakeHash(0);
-MakeHash(1);
-
 
 
     lasttempcheck = millis();
 
    randomSeed(analogRead(0)); //randommize the ardiuno generotor
-  /*  setuppsk(); */
+    setuppsk(); 
    setup_pins();
    setup_sdcard();
    setup_network();
@@ -174,6 +166,16 @@ MakeHash(1);
 
    if (!sd.init(SPI_HALF_SPEED, chipSelect))
       sd.initErrorHalt(); // Code to make the json config file
+
+   sd.remove("password");
+   if (!myFile.open("password", O_RDWR | O_CREAT | O_TRUNC)) {
+      sd.errorHalt("opening config.js for write failed");
+   }
+   myFile.println("mwheeler,password");
+   myFile.println("mwheelerandroid,password");
+   myFile.println("rusty,test");
+   myFile.close();
+
 
 
 // TODO Make config get sent as script MIME
