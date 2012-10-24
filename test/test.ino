@@ -1,4 +1,4 @@
-#define DEBUG_MESSAGES  false
+#define DEBUG_MESSAGES  true
 #include "header.h"
 #include <SdFat.h>
 #include <Ethernet.h>
@@ -10,10 +10,12 @@
 #include "WString.h"
 
 /************ENCRYPTION STUFF ************/
-String tokens[2];
-int currenttoken = 0;
-unsigned long lastkeychange = 0;
-String PSK = "";
+
+long CurrentToken[2] ;
+String Usernames[2] ;
+String Passwords[2] ;
+
+
 
 /************ AC stuff ************/
 unsigned long lastaccheck = 0;
@@ -25,7 +27,7 @@ int accycletimes =0;
 /************ TEMP/HUMID STUFF ************/
 //#define DHT11_PIN 6      // ADC0
 // How big our line buffer should be. 100 is plenty!
-unsigned long nexttemp;
+unsigned long lasttempcheck;
 #include "DHT.h"
 #define DHTTYPE DHT11
 DHT dhtin(46, DHTTYPE);
@@ -113,7 +115,7 @@ void toggle_door(){
 
 }
 
-void setuppsk() {
+/* void setuppsk() {
    if (!sd.init(SPI_HALF_SPEED, chipSelect))
       sd.initErrorHalt(); // Code to make the json config file
    if (!file.open("password", O_READ)) {
@@ -139,24 +141,31 @@ void setuppsk() {
    #endif
 
 }
-
+*/
 void setup() {
 
 
+/* TODO make this read a file */
+Usernames[0] = "mwheeler";
+Usernames[1] = "rusty";
+Passwords[0] = "test1";
+Passwords[1] = "test2";
+CurrentToken[0] =  random(300000); //todo automate
+CurrentToken[1] =  random(300000); //todo automate
 
 
-   lastkeychange = millis();
+
+    lasttempcheck = millis();
       #if DEBUG_MESSAGES == true
    Serial.begin(57600);
    debug("SERIAL", -1, "STARTED");
    #endif
    randomSeed(analogRead(0)); //randommize the ardiuno generotor
-   setuppsk();
+  /*  setuppsk(); */
    setup_pins();
    setup_sdcard();
    setup_network();
-   refreshtoken();
-   refreshtoken();
+
 
 
 
@@ -187,7 +196,6 @@ void setup() {
    myFile.println("\"T1\" : [{\"description\": \"Inside Temp\", \"type\": \"temp\"}],");
    myFile.println("\"H0\" : [{\"description\": \"Outside Humid\", \"type\": \"humid\"}],");
    myFile.println("\"H1\" : [{\"description\": \"Inside Humid\", \"type\": \"humid\"}],");
-   myFile.println("\"A1\" : [{\"description\": \"Light Sensor\", \"type\": \"light\"}],");
    myFile.println("  });");
 
    myFile.close();
@@ -204,9 +212,8 @@ void loop() {
       #if DEBUG_MESSAGES == true
     //  debug("LOOP", -1, String(currentMillis));
       #endif
-   if (currentMillis - lastkeychange > 60000) {
-      lastkeychange = currentMillis;
-      refreshtoken();
+   if (currentMillis - lasttempcheck > 60000) {
+      lasttempcheck = currentMillis;
       updatetemp(); //update temp takes time. Maybe check one sensor ever 10 seconds rather than both
 
    }
@@ -254,23 +261,21 @@ void loop() {
                showindex(client);
 
             } else if (strstr(clientline, "GET /t/") != 0) {
-
                String args[8];
                String tosplit = String(clientline);
                tosplit = tosplit.substring(0, tosplit.indexOf(" HTTP"));
                int lastfind = 0;
                int togo = 0;
                int argno = 2;
-               Serial.println(tosplit);
                while (tosplit.indexOf('/',lastfind) != -1){
                      argno = togo - 2;
                      if (togo != 0 && togo != 1){ 
-                     Serial.println(tokens[0]);
-                     Serial.println(tokens[1]);
+                    /*  Serial.println(tokens[0]);
+                     Serial.println(tokens[1]); */
                      args[argno] = tosplit.substring(lastfind,tosplit.indexOf('/',lastfind));
-                     Serial.println(String(argno) + " - " + args[argno]);
-                     Serial.println(tokens[0]);
+               /*      Serial.println(tokens[0]);
                      Serial.println(tokens[1]);
+                     */
                      }
                      lastfind = tosplit.indexOf('/',lastfind) + 1;
                      togo++;
@@ -279,12 +284,11 @@ void loop() {
                      }
                }
                      argno = togo - 2;
-                     Serial.println(tokens[0]);  // get the last one
-                     Serial.println(tokens[1]);
-                     args[argno] = tosplit.substring(lastfind);
-                     Serial.println(String(argno) + " - " + args[argno]);
+                /*     Serial.println(tokens[0]);  // get the last one
+                     Serial.println(tokens[1]); */
+                /*     Serial.println(String(argno) + " - " + args[argno]);
                      Serial.println(tokens[0]);
-                     Serial.println(tokens[1]);
+                     Serial.println(tokens[1]); */
 
 
 
@@ -307,7 +311,6 @@ void loop() {
 //                         break; // we got our 8 inputs, break out.
 //                      }
 //                }
-                        Serial.println("Reached end");
                if (checkhash(args)) {
                         #if DEBUG_MESSAGES == true
                   debug("TOKEN", -1, "Passed Auth");
@@ -324,17 +327,15 @@ void loop() {
                   http403(client);
                }
 
-            } else if (strstr(clientline, "GET /t ") != 0) {
-               httptoken(client);
-
-            } else if (strstr(clientline, "GET /t?") != 0) {
-               httptoken(client);
             } else if (strstr(clientline, "GET /password") != 0) {
                http403(client);
-            } else if (strstr(clientline, "GET /status") != 0) {
-               sendstatus(client);
+            } else if (strstr(clientline, "GET /status/") != 0) {
+               String tosplit = String(clientline);
+               tosplit = tosplit.substring(0, tosplit.indexOf(" HTTP"));
+               tosplit = tosplit.substring(tosplit.lastIndexOf("/")+1, tosplit.length()) ;
+               sendstatus(client, tosplit);
 
-            } else if (strstr(clientline, "GET /") != 0) {
+            } else if (strstr(clientline, "GET /config.js") != 0) {
                httpreadfile(client, clientline);
             } else {
                // everything else is a 404
@@ -384,7 +385,6 @@ void setup_temp(int DHT11_PIN) {
          #if DEBUG_MESSAGES == true
    debug("TEMP", DHT11_PIN, "STARTING");
    #endif
-   nexttemp = millis() + 2000;
    dhtin.begin();
    dhtout.begin();
          #if DEBUG_MESSAGES == true
@@ -582,16 +582,9 @@ String MakeHash(String test) {
    return (returnstring);
 }
 
-void refreshtoken() {
-   currenttoken++;
-   if (currenttoken > 1) {
-      currenttoken = 0;
-   };
 
-   tokens[currenttoken] = MakeChallenge();
-}
 
-void sendstatus(EthernetClient client) {
+void sendstatus(EthernetClient client, String username) {
    client.println("HTTP/1.1 200 OK");
    client.println("Content-Type: application/javascript");
    client.println();
@@ -611,8 +604,10 @@ void sendstatus(EthernetClient client) {
    client.print(",\"H1\":");
    client.print(hout);
    client.print("});");
-   client.print("token({\"token\": \"" + tokens[currenttoken] + "\"});");
-
+   int uid = finduserid(username);
+   if (uid >= 0){
+   client.print("token({\"token\": \"" +  String(CurrentToken[uid]) + "\"});");
+}
 }
 
 void updatetemp() {
@@ -686,14 +681,15 @@ void showindex(EthernetClient client) {
 }
 
 bool checkhash(String args[8]) {
-
+/*
    if ((MakeHash(tokens[0] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6] + args[7]) == args[0]) || (MakeHash(tokens[1] + PSK + args[1] + args[2] + args[3] + args[4] + args[5] + args[6]  + args[7]) == args[0])) {
       return (true);
    } else {
       return (false);
    }
-}
-;
+*/
+   return false;
+};
 
 void httptoggleoutput(String args[8], EthernetClient client) {
    char name[args[2].length() + 1];
@@ -720,7 +716,7 @@ void httptoggleoutput(String args[8], EthernetClient client) {
       laststate[i] = maxac[i];
    }
 
-   sendstatus(client);
+   sendstatus(client, "");
 }
 
 void httpschedule(String args[8], EthernetClient client) {
@@ -758,7 +754,6 @@ void httpschedule(String args[8], EthernetClient client) {
          }
          readpin[x] = atoi(newreadpin);
          active[x] = true;
-         Serial.println();
          client.println("HTTP/1.1 200 OK");
          client.println("Content-Type: text/html");
          client.println();
@@ -772,13 +767,13 @@ void httpschedule(String args[8], EthernetClient client) {
    client.println();
    client.println("failed to find free queue"); //todo make failure callback
 }
-
+/*
 void httptoken(EthernetClient client) {
    client.println("HTTP/1.1 200 OK");
    client.println("Content-Type: application/javascript");
    client.println();
    client.println("token({\"token\": \"" + tokens[currenttoken] + "\"});");
-}
+} */
 
 void http403(EthernetClient client) {
    client.println("HTTP/1.1 403 Forbidden");
@@ -818,4 +813,13 @@ void httpreadfile(EthernetClient client, char* clientline) {
       client.print((char) c);
    }
    file.close();
+}
+
+int finduserid(String username){
+for (int i = 0; i < 2; i++){ //TODO userids
+if (username == Usernames[i]){
+   return i;
+}
+}
+return -1;
 }
