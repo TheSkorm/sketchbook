@@ -20,7 +20,7 @@ settings={};
 function getstatus(){
      stamp = new Date().getTime();
   $.ajax({
-  url: 'http://59.167.158.119/status/'+stamp + "/" + document.getElementById("username").value ,
+  url: 'http://150.101.181.166:8080/status/'+stamp + "/" + document.getElementById("username").value ,
   dataType: "script",
   cache: true,
 });
@@ -33,7 +33,7 @@ tokenvalue  = response.token;
 
 function startupconfig(){
     var script = document.createElement('script');
-    script.setAttribute('src','http://59.167.158.119/config.js');
+    script.setAttribute('src','http://150.101.181.166:8080/config.js');
     document.getElementsByTagName('head')[0].appendChild(script);
 }
 
@@ -106,7 +106,7 @@ $( ".switch" ).click(function() {
     stamp = new Date().getTime();
   var hash = MD5( document.getElementById("psk").value + tokenvalue  ); 
   $.ajax({
-  url: 'http://59.167.158.119/t/' + hash + "/" + document.getElementById("username").value + $(this)[0].id.replace("D","/output/") + "/" +stamp ,
+  url: 'http://150.101.181.166:8080/t/' + hash + "/" + document.getElementById("username").value + $(this)[0].id.replace("D","/output/") + "/" +stamp ,
   dataType: "script",
   cache: true,
 });
@@ -139,7 +139,7 @@ function unlock(){
        stamp = new Date().getTime();
    var hash = MD5( document.getElementById("psk").value + tokenvalue  );  
   $.ajax({
-  url: 'http://59.167.158.119/t/' + hash + "/" + document.getElementById("username").value +  "/output/45" + "/" + stamp,
+  url: 'http://150.101.181.166:8080/t/' + hash + "/" + document.getElementById("username").value +  "/output/45" + "/" + stamp,
   dataType: "script",
   cache: true,
 });
@@ -147,7 +147,7 @@ function unlock(){
    stamp = new Date().getTime();
    var hash = MD5( document.getElementById("psk").value + tokenvalue  );  
   $.ajax({   //                       0        1              2      3       4     5     6            7
-  url: 'http://59.167.158.119/t/' + hash + "/" + document.getElementById("username").value +  "/schedu" + "/12" + "/0" + "/45" +"/D" +"/45" + "/" + stamp , 
+  url: 'http://150.101.181.166:8080/t/' + hash + "/" + document.getElementById("username").value +  "/schedu" + "/12" + "/0" + "/45" +"/D" +"/45" + "/" + stamp , 
   dataType: "script",
   cache: true,
 });
