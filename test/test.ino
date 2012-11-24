@@ -763,7 +763,7 @@ void httpreadfile(EthernetClient client, char* clientline) {
 }
 
 int finduserid(String username){
-for (int i = 0; i < 2; i++){ //TODO userids
+for (int i = 0; i < numberofusers; i++){ //TODO userids
 if (username == Usernames[i]){
    return i;
 }
